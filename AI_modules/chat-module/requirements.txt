@@ -1,0 +1,4 @@
+numpy==1.26.4
+fastapi==0.111.0
+Requests==2.32.3
+uvicorn==0.30.1

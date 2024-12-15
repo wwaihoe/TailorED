@@ -1,0 +1,72 @@
+networks:
+  bridgenetwork: #define bridge network that connects containers together internally
+    driver: bridge
+
+services:
+  front-end: #web application front-end
+    build: #build docker image using Dockerfile in front-end directory
+      context: ./front-end
+    environment: #set NODE_ENV environment variable to "production"
+      NODE_ENV: production
+    networks: #connect service to bridgenetwork
+      - bridgenetwork
+    ports: #map host port 8000 to port 8000 of webapp front end service
+      - 8000:8000
+    depends_on: #starts service after chat-module
+      - chat-module
+
+  chat-module: #chat-module
+    build: #build docker image using Dockerfile in chat-module directory
+      context: ./AI_modules/chat-module
+    networks: #connect service to bridgenetwork
+      - bridgenetwork
+    ports: #map host port 8001 to port 8001 of chat-module service
+      - 8001:8001
+    depends_on: #starts service after retrieval-module
+      - retrieval-module
+    environment:
+      - MODEL_NAME=${MODEL_NAME}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  retrieval-module: #retrieval-module
+    build: #build docker image using Dockerfile in retrieval-module directory
+      context: ./AI_modules/retrieval-module
+    networks: #connect service to bridgenetwork
+      - bridgenetwork
+    ports: #map host port 8002 to port 8002 of retrieval-module service
+      - 8002:8002
+    depends_on: #starts service after db
+      - db
+    volumes: #create volume "/retrieval-data" in container that is mapped to "/retrieval-data" in local directory of host machine that persists data
+      - ./retrieval-data:/retrieval-data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  db: #database
+    image: postgres:latest
+    networks:
+      - bridgenetwork
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: database
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
