@@ -144,8 +144,8 @@ export default function Chat() {
           <h1 className="text-2xl font-bold m-auto text-gray-100">Chat</h1>
         </header>
 
-        <main className="flex flex-row w-full h-[90%] items-center justify-center bg-zinc-900">
-          <div className="flex flex-col w-5/6 items-center justify-center overflow-y-auto p-6 bg-zinc-900">
+        <main className="flex flex-row w-full h-[90%] bg-zinc-900">
+          <div className="flex flex-col w-4/5 mx-5 overflow-y-auto p-6 bg-zinc-900">
             <div className="h-full">
               {messages.length === 0 && (
                 <p className="text-center text-gray-400">
@@ -171,7 +171,7 @@ export default function Chat() {
                 </div>
               ))}
             </div>
-            <div className="p-4 w-full max-w-5xl bg-zinc-800 border-t border-zinc-700 rounded-lg flex absolute bottom-0">
+            <div className="p-4 w-full max-w-[60%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex absolute bottom-0 ">
               <Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="w-full max-w-5xl flex flex-row gap-3">
                 {!isSubmitting? 
                 <input
@@ -207,15 +207,16 @@ export default function Chat() {
               </Form>            
             </div>
           </div>
-          <div className="w-1/6 bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3">
+          <div className="w-1/5 bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
             <label htmlFor="document">Upload documents here:</label>
-            <input type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500
+            <input type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
             file:mr-2 file:py-2 file:px-3
             file:rounded-full file:border-0
             file:text-sm file:font-medium
             file:bg-red-400 file:text-white
             hover:file:cursor-pointer hover:file:bg-red-500"
             onChange={handleUpload}/>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
             <ul>
               {files.map((file, index) => (
                 <li key={index} className="mt-2 text-sm text-grey-500">{file.name} ({file.size} bytes)</li>

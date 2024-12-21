@@ -45,7 +45,7 @@ export default function Index() {
 
 export function Task({ name, route }: TaskObj) {
   return (
-    <Link to={route? route: "/"} className="p-3 text-center bg-gray-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-red-400">
+    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-red-400">
       <h1>{name}</h1>
     </Link>
   );

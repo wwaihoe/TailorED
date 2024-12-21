@@ -37,7 +37,7 @@ export default function App() {
       <body>
         {process.env.NODE_ENV === 'development' ? <LiveReload/> : null}
         <div className="flex flex-row">
-          <nav className="navbar px-20 pt-20 flex flex-col gap-3 bg-zinc-800 border-r-2 border-e-yellow-400 font-sans text-white">
+          <nav className="navbar w-1/6 flex flex-col pt-10 gap-3 bg-zinc-800 border-r-2 border-e-yellow-400 font-sans text-white items-center">
             <div className="size-24">
               <img
                 src="/logo.png"

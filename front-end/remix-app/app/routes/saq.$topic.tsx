@@ -9,7 +9,7 @@ import {
 } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import type { MCQ } from "../types/types";
+import type { SAQ } from "../types/types";
 
 
 const chatModuleURL = "http://0.0.0.0:8001";
@@ -35,7 +35,7 @@ export async function action({
     inputs.push(entry);
   }
   try {
-    const response = await fetch(`${chatModuleURL}/evaluate_mcq`, {
+    const response = await fetch(`${chatModuleURL}/evaluate_saq`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -62,15 +62,15 @@ export default function MCQ() {
   const params = useParams();
   const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
-  const feedbackData = useActionData<MCQ>();
+  const feedbackData = useActionData<SAQ>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
   const test_data = [
-    { question: "What is the capital of France?", options: ["Paris", "London", "Berlin", "Madrid"], answer: "a" },
-    { question: "What is the capital of Germany?", options: ["Paris", "London", "Berlin", "Madrid"], answer: "c" },
-    { question: "What is the capital of Spain?", options: ["Paris", "London", "Berlin", "Madrid"], answer: "d" },
-    { question: "What is the capital of UK?", options: ["Paris", "London", "Berlin", "Madrid"], answer: "b" },
+    { question: "What is the capital of France?", answer: "Paris"},
+    { question: "What is the capital of Germany?", answer: "Berlin"},
+    { question: "What is the capital of Spain?", answer: "Madrid"},
+    { question: "What is the capital of UK?", answer: "London"},
   ]
 
   const handleSubmit = (event: any) => {
@@ -92,7 +92,7 @@ export default function MCQ() {
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
 
         <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-yellow-400 to-red-400">
-          <h1 className="text-2xl font-bold m-auto text-gray-100">MCQ Practice - {params.topic}</h1>
+          <h1 className="text-2xl font-bold m-auto text-gray-100">SAQ Practice - {params.topic}</h1>
         </header>
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
@@ -100,16 +100,9 @@ export default function MCQ() {
             <Form method="post" ref={formRef} onSubmit={handleSubmit}>
               {test_data.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
-                  <div className="max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
+                  <div className="flex flex-col gap-2 max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
-                    <ul className="list-inside">
-                      {question.options.map((option, optionIndex) => (
-                        <div className="flex flex-row justify-between">
-                          <li key={optionIndex}>{(optionIndex + 10).toString(36).toUpperCase()}. {option}</li>
-                          <input type="radio" id={(index*4+optionIndex).toString()} name={`mcq-${index}`} value={(optionIndex + 10).toString(36).toUpperCase()} />
-                        </div>
-                      ))} 
-                    </ul>
+                    <input type="text" name={`saq-${index}`} className="p-2 bg-zinc-800 rounded-md mt-2 text-lg" />
                   </div>
                 </div>
               ))}
