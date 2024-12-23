@@ -34,8 +34,13 @@ class QAChain:
     try:
       res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  input_query})
       res_json = res.json()
-      context = res_json["docs"]
-      context = "None" if context == "" else context
+      retrieved_docs = res_json["docs"]
+      context = ""
+      if len(retrieved_docs) > 0:
+        for doc in retrieved_docs:
+          context += doc + "\n\n-----------------------------------\n\n"
+      else:
+        context += "None"
       filenames = res_json["filenames"]
       conversationqa_prompt_template = f"""Use the following context to answer the human's question. 
 Provide a single clear and concise response in an XML object of this format: <response><reason>{{reason}}</reason><answer>{{answer}}</answer>. 
