@@ -9,8 +9,10 @@ import {
 import type { MCQ } from "../types/types";
 
 
-const chatModuleURL = "http://chat-module:8001";
-const retrievalModuleURL = "http://retrieval-module:8002";
+//const chatModuleURL = "http://chat-module:8001";
+//const retrievalModuleURL = "http://retrieval-module:8002";
+const chatModuleURL = "http://0.0.0.0:8001";
+const retrievalModuleURL = "http://0.0.0.0:8002";
 
 type TopicObj = {
   name: string;
