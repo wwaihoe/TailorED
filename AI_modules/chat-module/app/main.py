@@ -37,11 +37,8 @@ def read_root():
 
 @app.post("/chat")
 def get_response(chat_request: ChatRequest):
-  #response = qa_chain_model.generate(chat_request.messages)
-  #return ChatResponse(output=response["output"], fileNames=response["filenames"])   
-  print(chat_request)
-  response = llm.chat_generate(chat_request.messages)
-  return {"content": response}
+  response = qa_chain_model.generate(chat_request.messages)
+  return ChatResponse(output=response["content"], filenames=response["filenames"])
 
 @app.post("/generate_mcq")
 def generate_mcq(topic: str):

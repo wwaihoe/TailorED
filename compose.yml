@@ -10,8 +10,8 @@ services:
       NODE_ENV: production
     networks: #connect service to bridgenetwork
       - bridgenetwork
-    ports: #map host port 8000 to port 8000 of webapp front end service
-      - 8000:8000
+    ports: #map host port 8002 to port 8002 of webapp front end service
+      - 8002:8002
     depends_on: #starts service after chat-module
       - chat-module
 
@@ -40,7 +40,7 @@ services:
     networks: #connect service to bridgenetwork
       - bridgenetwork
     ports: #map host port 8002 to port 8002 of retrieval-module service
-      - 8002:8002
+      - 8000:8000
     depends_on: #starts service after db
       - db
     volumes: #create volume "/retrieval-data" in container that is mapped to "/retrieval-data" in local directory of host machine that persists data

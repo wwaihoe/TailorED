@@ -35,7 +35,7 @@ class HybridSearch:
     conn.commit()
     conn.execute('DROP TABLE IF EXISTS vectordb')
     conn.commit()
-    conn.execute(f'CREATE TABLE IF NOT EXISTS vectordb (id serial PRIMARY KEY, embedding vector({self.embedding_dim}), filename text, text text)')
+    conn.execute(f'CREATE TABLE IF NOT EXISTS vectordb (id serial PRIMARY KEY, embedding vector({self.embedding_dim}), filename text, text text, length integer)')
     conn.commit()
     conn.close()
     self.corpus_dict = corpus_dict # Dictonary of documents with filename as key and texts as value
@@ -210,9 +210,9 @@ class HybridSearch:
     conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
     results = conn.execute('SELECT filename, SUM(length) FROM vectordb GROUP BY filename').fetchall()
     conn.close()
-    filesizes = {}
+    filesizes = []
     for filename, filesize in results:
-      filesizes[filename] = filesize
+      filesizes.append({"name": filename, "size": filesize})
     return filesizes
 
 

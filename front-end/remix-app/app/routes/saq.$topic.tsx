@@ -12,7 +12,10 @@ import { json } from "@remix-run/node";
 import type { SAQ } from "../types/types";
 
 
-const chatModuleURL = "http://0.0.0.0:8001";
+//const chatModuleURL = "http://chat-module:8001";
+//const retrievalModuleURL = "http://retrieval-module:8002";
+const chatModuleURL = "http://localhost:8001";
+const retrievalModuleURL = "http://localhost:8002";
 
 
 export async function loader({

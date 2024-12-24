@@ -1,1 +1,6 @@
-devServerPort: 8002
+module.exports = {
+  ...otherConfig,
+  dev: {
+    port: 8002,
+  }
+};

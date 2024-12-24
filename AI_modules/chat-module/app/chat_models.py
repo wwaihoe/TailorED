@@ -55,11 +55,11 @@ If the you do not have sufficient knowledge to answer the question, say "Sorry, 
       response = self.llm.chat_generate(input_messages)
       reason = re.search(r'<reason>(.*?)</reason>', response, re.DOTALL).group(1)
       answer = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL).group(1)
-      response = {"reason": reason, "answer": answer}
+      output = {"reason": reason, "answer": answer}
     except:
-      response = {"reason": "Error with model", "answer": "Error with model"}
-      filenames = "None"
-      response = {"response": response, "filenames": filenames}
+      output = {"reason": "Error with model", "answer": "Error with model"}
+      filenames = []
+    response = {"content": output, "filenames": filenames}
     return response
 
 

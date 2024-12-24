@@ -7,13 +7,7 @@ from retrieval_model import hybrid_search
 import os
 
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-  yield
-  pass
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 origins = ["*"]
 
@@ -24,7 +18,6 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
-
 
 class Filename(BaseModel):
   filename: str
@@ -50,7 +43,7 @@ def load_files():
   return FileList(filesizes=filesizes)
 
 @app.post("/upload")
-def upload_document(file: UploadFile = File(...)):
+def upload_document(file: UploadFile):
   if file.content_type in ["application/pdf", "text/plain"]:
     hybrid_search.add_text_document(file.file, file.filename, file.size)
     print(f"{"PDF" if file.content_type == "application/pdf" else "Text"} Uploaded: {file.filename}")
@@ -84,4 +77,4 @@ def retrieve_documents(retrieval_query: RetrievalQuery) -> RetrievalDoc:
 
 
 if __name__ == '__main__':
-  uvicorn.run(app, port=8002, host='0.0.0.0')
+  uvicorn.run(app, port=8000, host='0.0.0.0')

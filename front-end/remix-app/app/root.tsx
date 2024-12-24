@@ -35,7 +35,6 @@ export default function App() {
         <Links />
       </head>
       <body>
-        {process.env.NODE_ENV === 'development' ? <LiveReload/> : null}
         <div className="flex flex-row">
           <nav className="navbar w-1/6 flex flex-col pt-10 gap-3 bg-zinc-800 border-r-2 border-e-yellow-400 font-sans text-white items-center">
             <div className="size-24">

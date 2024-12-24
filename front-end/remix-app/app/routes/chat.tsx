@@ -3,13 +3,17 @@ import {
   Form,
   useActionData,
   useNavigation,
-  useSubmit 
+  useSubmit,
+  useLoaderData, 
+  useFetcher,
 } from "@remix-run/react";
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs   } from "@remix-run/node";
 import { json } from "@remix-run/node";
 
-const chatModuleURL = "http://chat-module:8001";
-const retrievalModuleURL = "http://retrieval-module:8002";
+//const chatModuleURL = "http://chat-module:8001";
+//const retrievalModuleURL = "http://retrieval-module:8002";
+const chatModuleURL = "http://localhost:8001";
+const retrievalModuleURL = "http://localhost:8000";
 
 type Message = {
   role: string;
@@ -21,6 +25,33 @@ type FileListing = {
   size: number;
 }
 
+type FileObjectProps = {
+  name: string;
+  size: number;
+}
+
+export async function loader() {
+  try {
+    const response = await fetch(`${retrievalModuleURL}/load`);
+    if (response.ok) {
+      const data = await response.json();
+      const filesizes = data.filesizes
+      console.log("Files loaded: " + filesizes);
+      const files = filesizes.map((file: any) => {
+        return { name: file.name, size: file.size };
+      });
+      return files;
+    }
+    else {
+      console.error("Failed to load files.");
+      return [];
+    }
+  } catch (error) {
+    console.log("Failed to load files.");
+    console.error(error);
+    return [];
+  } 
+}
 
 export async function action({
   request,
@@ -40,14 +71,14 @@ export async function action({
     });
     if (response.ok) {
       const data = await response.json();
-      return json({ role: "assistant", content: data.content });
+      return json({ role: "assistant", content: data.content, filenames: data.filenames });
     }
     else {
-      return json({ role: "assistant", content: "Failed to generate response." });
+      return json({ role: "assistant", content: "Failed to generate response.", filenames: [] });
     }
   } catch (error) {
     console.error(error);
-    return json({ role: "assistant", content: "Failed to generate response." });
+    return json({ role: "assistant", content: "Failed to generate response.", filenames: [] });
   }
 
 }
@@ -62,7 +93,14 @@ export default function Chat() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  const [files, setFiles] = useState<FileListing[]>([]);
+  const initialFiles = useLoaderData<FileListing[]>();
+  const [files, setFiles] = useState<FileListing[]>(initialFiles);
+  const fetcher = useFetcher();
+  useEffect(() => {
+    if (fetcher.data) {
+      setFiles(fetcher.data as FileListing[]);
+    }
+  }, [fetcher.data]);
 
   const handleSubmit = (event: any) => {
     event.preventDefault()
@@ -93,15 +131,26 @@ export default function Chat() {
     }
   }, [isSubmitting]);
 
+  const [fileInput, setFileInput] = useState<string | null>(null);
+  const handleFileInput = (event: any) => {
+    event.preventDefault();
+    const file = event.target.files[0];
+    console.log("Selected: " + file.name);
+    setFileInput(file.name);
+  };
+
   const handleUpload = async(event: any) => {
     event.preventDefault();
     const file = event.target.files[0];
     console.log("Uploaded: " + file.name);
     const formData = new FormData();
-    formData.append("document", file);
+    formData.append("file", file);
     try {
       const response = await fetch(`${retrievalModuleURL}/upload`, {
         method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data"
+        },
         body: formData
       });
       if (response.ok) {
@@ -111,31 +160,9 @@ export default function Chat() {
       console.log("Failed to upload file.");
       console.error(error)
     }
+    setFileInput(null);
   };
 
-  useEffect(() => {
-    loadFiles();
-  });
-
-  const loadFiles = async() => {
-    try {
-      const response = await fetch(`${retrievalModuleURL}/load`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Files loaded: " + data);
-        const files = data.map((file: any) => {
-          return { name: file.name, size: file.size };
-        });
-        setFiles(files);
-      }
-      else {
-        console.error("Failed to load files.");
-      }
-    } catch (error) {
-      console.log("Failed to load files.");
-      console.error(error);
-    } 
-  }
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
@@ -211,20 +238,56 @@ export default function Chat() {
             <label htmlFor="document">Upload documents here:</label>
             <input type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
             file:mr-2 file:py-2 file:px-3
-            file:rounded-full file:border-0
+            file:rounded-lg file:border-0
             file:text-sm file:font-medium
             file:bg-red-400 file:text-white
             hover:file:cursor-pointer hover:file:bg-red-500"
-            onChange={handleUpload}/>
+            onChange={handleFileInput} />
+            {fileInput &&
+            <button onClick={handleUpload} className="mt-2 py-2 px-3 text-sm font-medium bg-red-400 rounded-lg text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400">
+              Upload File
+            </button>
+            }
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
             <ul>
               {files.map((file, index) => (
-                <li key={index} className="mt-2 text-sm text-grey-500">{file.name} ({file.size} bytes)</li>
+                <li key={index} className="mt-2 text-sm text-grey-500"><FileObject name={file.name} size={file.size}/></li>
               ))}
             </ul>
           </div>
         </main>
         
+    </div>
+  );
+}
+
+export function FileObject( {name, size}: FileObjectProps ) {
+  const deleteFile = async(filename: string) => {
+    try {
+      const response = await fetch(`${retrievalModuleURL}/delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ filename: filename })
+      });
+      if (response.ok) {
+        console.log("File deleted: " + filename);
+      }
+      else {
+        console.error("Failed to delete file: " + filename);
+      }
+    } catch (error) {
+      console.error("Failed to delete file: " + filename);
+      console.error(error);
+    }
+  }
+  
+  return (
+    <div>
+      <p>{name}</p>
+      <p>{size}</p>
+      <button onClick={() => deleteFile(name)}>X</button>
     </div>
   );
 }
