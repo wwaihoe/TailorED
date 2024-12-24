@@ -86,12 +86,10 @@ export async function action({
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const data = useActionData<Message>();
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const fetcher = useFetcher();
+  const isSubmitting = fetcher.state === "submitting";
 
   const initialFiles = useLoaderData<FileListing[]>();
   const [files, setFiles] = useState<FileListing[]>(initialFiles);
@@ -108,7 +106,7 @@ export default function Chat() {
     if (formRef.current) {
       const submitFormData = new FormData(formRef.current);
       submitFormData.append("messages", JSON.stringify(messages));
-      submit(
+      fetcher.submit(
         submitFormData,
         { method: "post" }
       );
@@ -116,13 +114,13 @@ export default function Chat() {
   };
 
   useEffect(() => {
-    if (data) {
+    if (fetcher.data) {
       setMessages((prev) => [
         ...prev,
-        { role: data.role, content: data.content },
+        { role: (fetcher.data as Message).role, content: (fetcher.data as Message).content },
       ]);
     }
-  }, [data]);
+  }, [fetcher.data]);
 
   useEffect(() => {
     if (!isSubmitting) {
@@ -199,7 +197,7 @@ export default function Chat() {
               ))}
             </div>
             <div className="p-4 w-full max-w-[60%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex absolute bottom-0 ">
-              <Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="w-full max-w-5xl flex flex-row gap-3">
+              <fetcher.Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="w-full max-w-5xl flex flex-row gap-3">
                 {!isSubmitting? 
                 <input
                   type="text"
@@ -231,7 +229,7 @@ export default function Chat() {
                   Send
                 </button>
                 }
-              </Form>            
+              </fetcher.Form>            
             </div>
           </div>
           <div className="w-1/5 bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
