@@ -9,7 +9,7 @@ class LlamaCPP():
       model_path=self.model_path,
       n_gpu_layers=-1,
       seed=1234,
-      n_ctx=4096,
+      n_ctx=8192,
       chat_format="llama-3"
     )
 
@@ -43,11 +43,10 @@ class LlamaCPP():
   def chat_generate(self, messages: list, **kwargs):
     llm_args = self.args
     llm_args.update(kwargs)
-    input_messages = [msg.model_dump() for msg in messages]
-    print("Messages: ", input_messages)
+    print("Messages: ", messages)
     print("Args: ", llm_args)
     output = self.llm.create_chat_completion(
-      input_messages,
+      messages,
       **llm_args
     )
     print(f"output: {output}")

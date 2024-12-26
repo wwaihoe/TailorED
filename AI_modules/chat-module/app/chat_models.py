@@ -4,8 +4,9 @@ import re
 from dotenv import load_dotenv
 from LLM import LlamaCPP
 
-retrieval_name = "retrieval-module"
-retrieval_port = "8002"
+#retrieval_name = "retrieval-module"
+retrieval_name = "localhost"
+retrieval_port = "8000"
 
 import torch
 #Use GPU if available
@@ -28,9 +29,11 @@ class QAChain:
     if len(messages) == 0:
       response = {"response": "No input", "filenames": None}
       return 
-    input_query = messages[-1]["content"]
+    message_list = [message.model_dump() for message in messages]
+    print(message_list)
+    input_query = message_list[-1]["content"]
     input_messages = [{"role": "system", "content": "You are an assistant who answers questions accurately."},]
-    input_messages.extend(messages)
+    input_messages.extend(message_list)
     try:
       res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  input_query})
       res_json = res.json()
@@ -56,7 +59,8 @@ If the you do not have sufficient knowledge to answer the question, say "Sorry, 
       reason = re.search(r'<reason>(.*?)</reason>', response, re.DOTALL).group(1)
       answer = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL).group(1)
       output = {"reason": reason, "answer": answer}
-    except:
+    except Exception as e:
+      print(e)
       output = {"reason": "Error with model", "answer": "Error with model"}
       filenames = []
     response = {"content": output, "filenames": filenames}

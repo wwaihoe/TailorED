@@ -7,7 +7,7 @@ torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
 
 class SpeechRecognitionModel():
-  def __init__(self, model_str: str="openai/whisper-large-v3"):
+  def __init__(self, model_str: str="openai/whisper-large-v3-turbo"):
     self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
         model_str, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
     )

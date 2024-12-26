@@ -53,7 +53,7 @@ export function Task({ name, route }: TaskObj) {
 
 
 const tasks = [
-  {name: "Chat", route: "/chat"},
+  {name: "Chat", route: "/chat/fileupload"},
   {name: "MCQ Practice", route: "/mcq"},
   {name: "SAQ Practice", route: "/saq"},
   {name: "Summarize Notes", route: "/summarize"},

@@ -3,7 +3,7 @@ from transformers import AutoProcessor, AutoModelForCausalLM
 
 
 class ImageCaptionModel():
-  def __init__(self, model_str: str="microsoft/Florence-2-large-ft"):
+  def __init__(self, model_str: str="microsoft/Florence-2-base-ft"):
     self.model = AutoModelForCausalLM.from_pretrained(model_str, trust_remote_code=True)
     self.processor = AutoProcessor.from_pretrained(model_str, trust_remote_code=True)
   

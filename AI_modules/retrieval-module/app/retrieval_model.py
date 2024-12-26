@@ -6,7 +6,7 @@ from pgvector.psycopg import register_vector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from image_models import ImageCaptionModel
 from speech_models import SpeechRecognitionModel
-from FlagEmbedding import BGEM3FlagModel, FlagReranker
+from FlagEmbedding import BGEM3FlagModel, FlagModel, FlagReranker
 
 import torch
 #Use GPU if available
@@ -18,12 +18,10 @@ else:
 
 
 class HybridSearch:
-  def __init__(self, embedding_model, embedding_dim, reranker, image_caption_model, speech_recognition_model, dbname="database", user="postgres", password="admin", corpus_dict=dict()):
+  def __init__(self, embedding_model, embedding_dim, reranker, dbname="database", user="postgres", password="admin", corpus_dict=dict()):
     self.embedding_model = embedding_model
     self.embedding_dim = embedding_dim
     self.reranker = reranker
-    self.image_caption_model = image_caption_model
-    self.speech_recognition_model = speech_recognition_model
     self.dbname = dbname 
     self.user = user
     self.password = password
@@ -73,6 +71,7 @@ class HybridSearch:
     except Exception as e:
       print("Error in adding documents to BM25 model")
       print(e)
+      raise
 
     try:
       # Add documents to the vector database
@@ -82,23 +81,25 @@ class HybridSearch:
       # Embed the corpus
       embeddings = embedding_model.encode(corpus)
       register_vector(conn)
-      for text, embedding in zip(corpus, embeddings["dense_vecs"]):
+      for text, embedding in zip(corpus, embeddings):
         length = len(text)
         conn.execute('INSERT INTO vectordb (embedding, filename, text, length) VALUES (%s, %s, %s, %s)', (np.array(embedding), filename, text, length))
       conn.commit()
       conn.close()
-    except:
+    except Exception as e:
       print("Error in adding documents to vector database")
       print(e)
+      raise
 
     return
   
 
-  def add_text_document(self, file, filename: str, filesize: float):
+  async def add_text_document(self, file, filename: str, filesize: float):
+    doc_text = ""
     try:
       # Read the document 
-      doc = pymupdf.open(stream=file)
-      doc_text = ""
+      file_content = await file.read()
+      doc = pymupdf.open(stream=file_content)
       for page in doc: # iterate the document pages
           text = page.get_text() # get plain text encoded as UTF-8
           doc_text += text
@@ -106,22 +107,32 @@ class HybridSearch:
     except Exception as e:
       print("Error in reading the document")
       print(e)
+      raise
     
-    # Split the document into smaller texts
-    corpus = self.split_document(doc_text)
-    self.add_documents(filename, corpus)
-    return
+    try:
+      # Split the document into smaller texts
+      corpus = self.split_document(doc_text)
+      self.add_documents(filename, corpus)
+      return
+    except Exception as e:
+      print("Error in adding document to the corpus")
+      print(e)
+      raise
 
 
   def add_image(self, file, filename: str, filesize: float):
-    caption = self.image_caption_model.generate(file)
+    image_caption_model = ImageCaptionModel()
+    caption = image_caption_model.generate(file)
+    del image_caption_model
     corpus = self.split_document(caption)
     self.add_documents(filename, corpus)
     return
         
     
   def add_speech(self, filepath: str, filename: str, filesize: float):
+    speech_recognition_model = SpeechRecognitionModel()
     speech = self.speech_recognition_model.generate(filepath)
+    del speech_recognition_model
     corpus = self.text_splitter.split_text(speech)
     self.add_documents(filename, corpus)
     return
@@ -153,6 +164,10 @@ class HybridSearch:
     full_corpus = []
     for texts in self.corpus_dict.values():
       full_corpus += texts
+    # Ensure k is within the valid range
+    k = min(k, len(full_corpus))
+    if k < 1:
+        k = 1
     bm25_results, bm25_scores = self.retriever.retrieve(query_tokens, corpus=full_corpus, k=k)
     docs = []
     filenames = set()
@@ -168,7 +183,7 @@ class HybridSearch:
 
   def vector_search(self, query, k=3):
     # Query the vector database
-    embedding = self.embedding_model.encode(query)["dense_vecs"]
+    embedding = self.embedding_model.encode(query)
     conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
     register_vector(conn)
     vector_results = conn.execute(f'SELECT embedding, text, filename FROM vectordb ORDER BY embedding <-> %s LIMIT {k}', (np.array(embedding),)).fetchall()
@@ -195,14 +210,18 @@ class HybridSearch:
 
 
   def search(self, query, k=2):
-    print("Keyword Search...")
-    keyword_docs, keyword_filenames = self.keyword_search(query, k)
-    print("Vector Search...")
-    vector_docs, vector_filenames = self.vector_search(query, k)
-    all_docs = keyword_docs + vector_docs
-    all_filenames = keyword_filenames.union(vector_filenames)
-    print("Reranking...")
-    reranked_docs = self.rerank(query, all_docs, k)
+    if len(self.corpus_dict) > 0:
+      print("Keyword Search...")
+      keyword_docs, keyword_filenames = self.keyword_search(query, k)
+      print("Vector Search...")
+      vector_docs, vector_filenames = self.vector_search(query, k)
+      all_docs = keyword_docs + vector_docs
+      all_filenames = keyword_filenames.union(vector_filenames)
+      print("Reranking...")
+      reranked_docs = self.rerank(query, all_docs, k)
+    else:
+      reranked_docs = []
+      all_filenames = set()
     return reranked_docs, all_filenames
 
     
@@ -218,10 +237,8 @@ class HybridSearch:
 
 
 #initialize the embedding, reranker, image captioning model, and vector store
-embedding_model = BGEM3FlagModel('BAAI/bge-m3', 
+embedding_model = FlagModel('BAAI/bge-base-en-v1.5', 
                                  use_fp16=True) # Setting use_fp16 to True speeds up computation with a slight performance degradation
-reranker = FlagReranker('BAAI/bge-reranker-v2-m3', 
+reranker = FlagReranker('BAAI/bge-reranker-base', 
                         use_fp16=True)
-image_caption_model = ImageCaptionModel()
-speech_recognition_model = SpeechRecognitionModel()
-hybrid_search = HybridSearch(embedding_model=embedding_model, embedding_dim=1024, reranker=reranker, image_caption_model=image_caption_model, speech_recognition_model=speech_recognition_model)
+hybrid_search = HybridSearch(embedding_model=embedding_model, embedding_dim=768, reranker=reranker)

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
+from typing import List
 from chat_models import qa_chain_model, llm
 from task_models import question_generator_model, answer_evaluator_model, summarizer
 
@@ -24,10 +25,14 @@ class Message(BaseModel):
   content: str
 
 class ChatRequest(BaseModel):
-  messages: list[Message]
+  messages: List[Message]
+
+class MessageWithReason(BaseModel):
+  reason: str
+  answer: str
 
 class ChatResponse(BaseModel):
-  output: str
+  output: MessageWithReason
   filenames: list[str]
 
 

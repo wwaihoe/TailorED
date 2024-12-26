@@ -6,8 +6,9 @@ import {
   useSubmit,
   useLoaderData, 
   useFetcher,
+  Outlet,
 } from "@remix-run/react";
-import type { ActionFunctionArgs   } from "@remix-run/node";
+import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 
 //const chatModuleURL = "http://chat-module:8001";
@@ -20,38 +21,6 @@ type Message = {
   content: string;
 };
 
-type FileListing = {
-  name: string;
-  size: number;
-}
-
-type FileObjectProps = {
-  name: string;
-  size: number;
-}
-
-export async function loader() {
-  try {
-    const response = await fetch(`${retrievalModuleURL}/load`);
-    if (response.ok) {
-      const data = await response.json();
-      const filesizes = data.filesizes
-      console.log("Files loaded: " + filesizes);
-      const files = filesizes.map((file: any) => {
-        return { name: file.name, size: file.size };
-      });
-      return files;
-    }
-    else {
-      console.error("Failed to load files.");
-      return [];
-    }
-  } catch (error) {
-    console.log("Failed to load files.");
-    console.error(error);
-    return [];
-  } 
-}
 
 export async function action({
   request,
@@ -71,7 +40,7 @@ export async function action({
     });
     if (response.ok) {
       const data = await response.json();
-      return json({ role: "assistant", content: data.content, filenames: data.filenames });
+      return json({ role: "assistant", content: data.output.answer, filenames: data.filenames });
     }
     else {
       return json({ role: "assistant", content: "Failed to generate response.", filenames: [] });
@@ -90,15 +59,6 @@ export default function Chat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === "submitting";
-
-  const initialFiles = useLoaderData<FileListing[]>();
-  const [files, setFiles] = useState<FileListing[]>(initialFiles);
-  const fetcher = useFetcher();
-  useEffect(() => {
-    if (fetcher.data) {
-      setFiles(fetcher.data as FileListing[]);
-    }
-  }, [fetcher.data]);
 
   const handleSubmit = (event: any) => {
     event.preventDefault()
@@ -129,38 +89,6 @@ export default function Chat() {
     }
   }, [isSubmitting]);
 
-  const [fileInput, setFileInput] = useState<string | null>(null);
-  const handleFileInput = (event: any) => {
-    event.preventDefault();
-    const file = event.target.files[0];
-    console.log("Selected: " + file.name);
-    setFileInput(file.name);
-  };
-
-  const handleUpload = async(event: any) => {
-    event.preventDefault();
-    const file = event.target.files[0];
-    console.log("Uploaded: " + file.name);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const response = await fetch(`${retrievalModuleURL}/upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "multipart/form-data"
-        },
-        body: formData
-      });
-      if (response.ok) {
-        console.log("File uploaded.");
-      }
-    } catch (error) {
-      console.log("Failed to upload file.");
-      console.error(error)
-    }
-    setFileInput(null);
-  };
-
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
@@ -170,8 +98,8 @@ export default function Chat() {
         </header>
 
         <main className="flex flex-row w-full h-[90%] bg-zinc-900">
-          <div className="flex flex-col w-4/5 mx-5 overflow-y-auto p-6 bg-zinc-900">
-            <div className="h-full">
+          <div className="flex flex-col w-2/3 mx-5 overflow-y-auto p-6 bg-zinc-900">
+            <div className="h-full w-5/6 self-center">
               {messages.length === 0 && (
                 <p className="text-center text-gray-400">
                   No messages yet. Start chatting!
@@ -195,9 +123,12 @@ export default function Chat() {
                   </div>
                 </div>
               ))}
+              {isSubmitting && <div className="flex select-none">
+                <div className="rounded-full h-5 w-5 bg-white animate-ping"></div>
+              </div>}
             </div>
-            <div className="p-4 w-full max-w-[60%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex absolute bottom-0 ">
-              <fetcher.Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="w-full max-w-5xl flex flex-row gap-3">
+            <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
+              <fetcher.Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="w-full flex flex-row gap-3">
                 {!isSubmitting? 
                 <input
                   type="text"
@@ -205,7 +136,7 @@ export default function Chat() {
                   value={input}
                   ref={inputRef}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 bg-zinc-700 text-gray-200 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full max-w-4xl"
+                  className="flex-1 bg-zinc-700 text-gray-200 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full"
                   placeholder="Type your message..."
                 /> :
                 <input
@@ -213,7 +144,7 @@ export default function Chat() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full max-w-4xl"
+                  className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full"
                   placeholder="Type your message..."
                 />
                 }
@@ -232,60 +163,11 @@ export default function Chat() {
               </fetcher.Form>            
             </div>
           </div>
-          <div className="w-1/5 bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
-            <label htmlFor="document">Upload documents here:</label>
-            <input type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
-            file:mr-2 file:py-2 file:px-3
-            file:rounded-lg file:border-0
-            file:text-sm file:font-medium
-            file:bg-red-400 file:text-white
-            hover:file:cursor-pointer hover:file:bg-red-500"
-            onChange={handleFileInput} />
-            {fileInput &&
-            <button onClick={handleUpload} className="mt-2 py-2 px-3 text-sm font-medium bg-red-400 rounded-lg text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400">
-              Upload File
-            </button>
-            }
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
-            <ul>
-              {files.map((file, index) => (
-                <li key={index} className="mt-2 text-sm text-grey-500"><FileObject name={file.name} size={file.size}/></li>
-              ))}
-            </ul>
-          </div>
+          <Outlet/>
+          
         </main>
         
     </div>
   );
 }
 
-export function FileObject( {name, size}: FileObjectProps ) {
-  const deleteFile = async(filename: string) => {
-    try {
-      const response = await fetch(`${retrievalModuleURL}/delete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ filename: filename })
-      });
-      if (response.ok) {
-        console.log("File deleted: " + filename);
-      }
-      else {
-        console.error("Failed to delete file: " + filename);
-      }
-    } catch (error) {
-      console.error("Failed to delete file: " + filename);
-      console.error(error);
-    }
-  }
-  
-  return (
-    <div>
-      <p>{name}</p>
-      <p>{size}</p>
-      <button onClick={() => deleteFile(name)}>X</button>
-    </div>
-  );
-}

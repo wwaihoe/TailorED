@@ -29,8 +29,8 @@ class RetrievalQuery(BaseModel):
   query: str
 
 class RetrievalDoc(BaseModel):
-  docs: str
-  filenames: set[str]
+  docs: list[str]
+  filenames: list[str]
 
 
 @app.get("/")
@@ -43,9 +43,9 @@ def load_files():
   return FileList(filesizes=filesizes)
 
 @app.post("/upload")
-def upload_document(file: UploadFile):
+async def upload_document(file: UploadFile):
   if file.content_type in ["application/pdf", "text/plain"]:
-    hybrid_search.add_text_document(file.file, file.filename, file.size)
+    await hybrid_search.add_text_document(file, file.filename, file.size)
     print(f"{"PDF" if file.content_type == "application/pdf" else "Text"} Uploaded: {file.filename}")
   elif file.content_type in ["image/jpeg", "image/png"]:
     hybrid_search.add_image(file.file, file.filename, file.size)
