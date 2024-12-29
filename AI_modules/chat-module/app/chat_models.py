@@ -35,7 +35,10 @@ class QAChain:
     input_messages = [{"role": "system", "content": "You are an assistant who answers questions accurately."},]
     input_messages.extend(message_list)
     try:
-      res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  input_query})
+      retrieval_query = ""
+      for message in input_messages:
+        retrieval_query += f"{message["role"]}: {message["content"]}\n\n"
+      res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  retrieval_query})
       res_json = res.json()
       retrieved_docs = res_json["docs"]
       context = ""

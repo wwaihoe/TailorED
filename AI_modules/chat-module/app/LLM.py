@@ -19,7 +19,7 @@ class LlamaCPP():
       "min_p": 0.5,
       "top_p": 1.0,
       "top_k": 0,
-      "max_tokens": 4096,
+      "max_tokens": 8192,
     }
     defaults.update(kwargs)
     self.args = defaults

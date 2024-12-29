@@ -4,9 +4,10 @@ import bm25s
 import psycopg
 from pgvector.psycopg import register_vector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from embedding_models import EmbeddingModel, RerankerModel
 from image_models import ImageCaptionModel
 from speech_models import SpeechRecognitionModel
-from FlagEmbedding import BGEM3FlagModel, FlagModel, FlagReranker
+
 
 import torch
 #Use GPU if available
@@ -18,10 +19,8 @@ else:
 
 
 class HybridSearch:
-  def __init__(self, embedding_model, embedding_dim, reranker, dbname="database", user="postgres", password="admin", corpus_dict=dict()):
-    self.embedding_model = embedding_model
+  def __init__(self, embedding_dim, dbname="database", user="postgres", password="admin", corpus_dict=dict()):
     self.embedding_dim = embedding_dim
-    self.reranker = reranker
     self.dbname = dbname 
     self.user = user
     self.password = password
@@ -43,7 +42,7 @@ class HybridSearch:
     pass
   
 
-  def split_document(self, document: str, chunk_size: int=10000, chunk_overlap: int=2500):
+  def split_document(self, document: str, chunk_size: int=8000, chunk_overlap: int=2000):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -79,7 +78,9 @@ class HybridSearch:
       # Remove existing documents with the same filename
       conn.execute('DELETE FROM vectordb WHERE filename = %s', (filename,))
       # Embed the corpus
+      embedding_model = EmbeddingModel()
       embeddings = embedding_model.encode(corpus)
+      del embedding_model
       register_vector(conn)
       for text, embedding in zip(corpus, embeddings):
         length = len(text)
@@ -183,7 +184,9 @@ class HybridSearch:
 
   def vector_search(self, query, k=3):
     # Query the vector database
-    embedding = self.embedding_model.encode(query)
+    embedding_model = EmbeddingModel()
+    embedding = embedding_model.encode(query)
+    del embedding_model
     conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
     register_vector(conn)
     vector_results = conn.execute(f'SELECT embedding, text, filename FROM vectordb ORDER BY embedding <-> %s LIMIT {k}', (np.array(embedding),)).fetchall()
@@ -202,7 +205,9 @@ class HybridSearch:
         query_doc_pairs.append([query, doc])
         seen_docs.append(doc)
     # Compute the scores
-    scores = self.reranker.compute_score(query_doc_pairs)
+    reranker = RerankerModel()
+    scores = reranker.compute_score(query_doc_pairs)
+    del reranker
     # Sort the documents by score
     reranked_docs = [doc for score, doc in sorted(zip(scores, seen_docs), reverse=True)]
     # Return top-k documents
@@ -235,10 +240,4 @@ class HybridSearch:
     return filesizes
 
 
-
-#initialize the embedding, reranker, image captioning model, and vector store
-embedding_model = FlagModel('BAAI/bge-base-en-v1.5', 
-                                 use_fp16=True) # Setting use_fp16 to True speeds up computation with a slight performance degradation
-reranker = FlagReranker('BAAI/bge-reranker-base', 
-                        use_fp16=True)
-hybrid_search = HybridSearch(embedding_model=embedding_model, embedding_dim=768, reranker=reranker)
+hybrid_search = HybridSearch(embedding_dim=EmbeddingModel.embedding_dims)
