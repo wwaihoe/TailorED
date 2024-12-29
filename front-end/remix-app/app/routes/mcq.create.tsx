@@ -4,9 +4,10 @@ import {
   Form,
   useActionData,
   useNavigation,
-  useSubmit 
+  useSubmit,
+  Outlet 
 } from "@remix-run/react";
-import type { MCQ } from "../types/types";
+import type { ActionFunctionArgs } from "@remix-run/node";
 
 
 //const chatModuleURL = "http://chat-module:8001";
@@ -14,45 +15,41 @@ import type { MCQ } from "../types/types";
 const chatModuleURL = "http://localhost:8001";
 const retrievalModuleURL = "http://localhost:8002";
 
-type TopicObj = {
-  name: string;
-  route?: string;
+
+export async function action({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();  
+  const topic = formData.get("topic") as string;
+  try {
+      const response = await fetch(`${chatModuleURL}/generate_mcq`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ topic: topic }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return;
+      }
+      else {
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+      return;
+    }
 }
 
-type FileListing = {
-  name: string;
-  size: number;
-}
-
-export default function MCQ() {
+export default function MCQCreate() {
   const [input, setInput] = useState("");
   const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-
-  const [files, setFiles] = useState<FileListing[]>([]);
-
-  const handleUpload = async(event: any) => {
-    event.preventDefault();
-    const file = event.target.files[0];
-    console.log("Uploaded: " + file.name);
-    const formData = new FormData();
-    formData.append("document", file);
-    try {
-      const response = await fetch(`${retrievalModuleURL}/upload`, {
-        method: "POST",
-        body: formData
-      });
-      if (response.ok) {
-        console.log("File uploaded.");
-      }
-    } catch (error) {
-      console.log("Failed to upload file.");
-      console.error(error)
-    }
-  };
+  
 
   const handleSubmit = (event: any) => {
     event.preventDefault();
@@ -73,28 +70,14 @@ export default function MCQ() {
       </header>
       <main className="h-[90%] w-[90%] m-5 justify-center flex">
         <Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="flex flex-col justify-center content-center items-center max-w-4xl w-full h-fit">
-          {!isSubmitting? 
-          <div className="flex flex-col gap-5 w-full bg-zinc-700 m-5 border-t border-zinc-500 rounded-lg p-3 h-full">
-            <div className="p-4 w-full h-fit bg-zinc-800 border-t border-zinc-700 rounded-lg mx-auto flex flex-col gap-3">
-              <label htmlFor="document">Upload documents here:</label>
-              <input type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
-              file:mr-2 file:py-2 file:px-3
-              file:rounded-full file:border-0
-              file:text-sm file:font-medium
-              file:bg-red-400 file:text-white
-              hover:file:cursor-pointer hover:file:bg-red-500"
-              onChange={handleUpload}/>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
-              <ul>
-                {files.map((file, index) => (
-                  <li key={index} className="mt-2 text-sm text-grey-500">{file.name} ({file.size} bytes)</li>
-                ))}
-              </ul>
-            </div>
+          <div className="flex flex-col gap-5 w-full bg-zinc-700 m-5 border-t border-zinc-500 rounded-lg p-5 h-full">
+            <Outlet />
+            {!isSubmitting? 
             <div className="flex flex-col gap-3">
               <input
+                disabled={isSubmitting}
                 type="text"
-                name="query"
+                name="topic"
                 value={input}
                 ref={inputRef}
                 onChange={(e) => setInput(e.target.value)}
@@ -107,24 +90,15 @@ export default function MCQ() {
                 Create MCQs
               </button>
             </div>
-          </div>
             :
-          <div>
-            <input
-              disabled
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full max-w-4xl"
-              placeholder="Type the topic for MCQs..."
-            />
-            <button disabled 
-            className="px-6 py-3 bg-gray-700 rounded-md text-white"
-            >
-              Create MCQs
-            </button>
+            <div className='select-none flex space-x-2 justify-center items-center mb-5'>
+              <span className='sr-only'>Loading...</span>
+              <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]'></div>
+              <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]'></div>
+              <div className='h-5 w-5 bg-white rounded-full animate-bounce'></div>
+            </div>
+            }
           </div>
-          }
         </Form>        
       </main>
     </div>
