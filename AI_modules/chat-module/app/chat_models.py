@@ -38,7 +38,7 @@ class QAChain:
       retrieval_query = ""
       for message in input_messages:
         retrieval_query += f"{message["role"]}: {message["content"]}\n\n"
-      res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  retrieval_query})
+      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  retrieval_query})
       res_json = res.json()
       retrieved_docs = res_json["docs"]
       context = ""
@@ -49,7 +49,7 @@ class QAChain:
         context += "None"
       filenames = res_json["filenames"]
       conversationqa_prompt_template = f"""Use the following context to answer the human's question. 
-Provide a single clear and concise response in an XML object of this format: <response><reason>{{reason}}</reason><answer>{{answer}}</answer>. 
+Provide only a single clear and concise response in an XML object of this format: <response><reason>{{reason}}</reason><answer>{{answer}}</answer>. 
 If the you do not have sufficient knowledge to answer the question, say "Sorry, I do not have sufficient knowledge to answer the question.". 
 
 <context>{context}</context>

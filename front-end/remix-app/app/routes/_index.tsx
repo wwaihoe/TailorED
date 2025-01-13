@@ -34,7 +34,7 @@ export default function Index() {
         </header>
         <main>
           <div className="grid grid-cols-4 gap-4">
-            {tasks.map((task) => <Task name={task.name} route={task.route} />)}
+            {tasks.map((task) => <Task key={task.name} name={task.name} route={task.route} />)}
           </div>
         </main>
       </div>
@@ -55,6 +55,6 @@ export function Task({ name, route }: TaskObj) {
 const tasks = [
   {name: "Chat", route: "/chat/fileupload"},
   {name: "MCQ Practice", route: "/mcq"},
-  {name: "SAQ Practice", route: "/saq"},
+  {name: "SAQ Practice", route: "/saq/create/fileupload"},
   {name: "Summarize Notes", route: "/summarize"},
 ]

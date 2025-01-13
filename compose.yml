@@ -52,6 +52,16 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+  
+  data-module: #data-module
+    build: #build docker image using Dockerfile in data-module directory
+      context: ./data-module
+    networks: #connect service to bridgenetwork
+      - bridgenetwork
+    ports: #map host port 8003 to port 8003 of data-module service
+      - 8003:8003
+    depends_on: #starts service after db
+      - db
 
   db: #database
     image: postgres:latest

@@ -1,10 +1,11 @@
 export type MCQ = {
+  id: number
   question: string
-  optionA: string
-  optionB: string
-  optionC: string
-  optionD: string
-  answer: 'a' | 'b' | 'c' | 'd'
+  option_a: string
+  option_b: string
+  option_c: string
+  option_d: string
+  answer: string
 }
 
 export type SAQ = {

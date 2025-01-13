@@ -2,7 +2,13 @@ import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+import torch
+#Use GPU if available
+if torch.cuda.is_available():
+    device = 'cuda'
+else:
+    device = 'cpu'
+    
 torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
 

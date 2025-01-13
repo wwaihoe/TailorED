@@ -31,7 +31,7 @@ export async function action({
   const prevMessageJSON = prevMessages ? JSON.parse(prevMessages as string) : [];
   const inputMessages = [...prevMessageJSON, { role: "user", content: query }];
   try {
-    const response = await fetch(`${chatModuleURL}/chat`, {
+    const response = await fetch(`${chatModuleURL}/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -128,7 +128,7 @@ export default function Chat() {
               </div>}
             </div>
             <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
-              <fetcher.Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="w-full flex flex-row gap-3">
+              <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3">
                 {!isSubmitting? 
                 <input
                   type="text"

@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from typing import List
 from chat_models import qa_chain_model, llm
 from task_models import question_generator_model, answer_evaluator_model, summarizer
+from uuid import uuid4
+import requests
 
 
 app = FastAPI()
@@ -18,6 +20,10 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
+
+
+datamodule_name = "localhost"
+datamodule_port = "8003"
 
 
 class Message(BaseModel):
@@ -35,39 +41,75 @@ class ChatResponse(BaseModel):
   output: MessageWithReason
   filenames: list[str]
 
+class Topic(BaseModel):
+  topic: str
+
+class EvaluateMCQRequest(BaseModel):
+  question: str
+  options: list[str]
+  correct_answer: str
+  student_answer: str
+  additional_info: bool=False
+
+class EvaluateSAQRequest(BaseModel):
+  question: str
+  model_answer: str
+  student_answer: str
+  additional_info: bool=False
+
+class SummarizeRequest(BaseModel):
+  notes: str
+  topic: str
+  examples: bool=False
+  context: bool=False
+
 
 @app.get("/")
 def read_root():
   return {"Server": "On"}
 
-@app.post("/chat")
+@app.post("/chat/")
 def get_response(chat_request: ChatRequest):
   response = qa_chain_model.generate(chat_request.messages)
   return ChatResponse(output=response["content"], filenames=response["filenames"])
 
-@app.post("/generate_mcq")
-def generate_mcq(topic: str):
-  mcq_groups = question_generator_model.generate_mcq(topic)
+@app.post("/generatemcq/")
+def generate_mcq(topic: Topic):
+  mcq_groups = question_generator_model.generate_mcq(topic.topic)
+  if mcq_groups is None:
+    return None
+  question_set_id = str(uuid4())
+  try:
+    body = {"question_set_id": question_set_id, "topic": topic.topic, "mcqs": mcq_groups}
+    print(body)
+    response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_mcq/", json=body)
+    if not response.ok:
+      print("Error in saving MCQs")
+      return None
+  except Exception as e:
+    print("Error in saving MCQs")
+    print(e)
+    return None
   return mcq_groups
 
-@app.post("/generate_saq")
-def generate_saq(topic: str):
-  saq_groups = question_generator_model.generate_saq(topic)
+@app.post("/generatesaq/")
+def generate_saq(topic: Topic):
+  saq_groups = question_generator_model.generate_saq(topic.topic)
   return saq_groups
 
-@app.post("/evaluate_mcq")
-def evaluate_answer(question: str, options: list[str], correct_answer: str, student_answer: str, additional_info: bool = False):
-  response = answer_evaluator_model.evaluate_mcq(question, options, correct_answer, student_answer, additional_info)
+@app.post("/evaluatemcq/")
+def evaluate_answer(evaluate_mcq_request: EvaluateMCQRequest):
+  response = answer_evaluator_model.evaluate_mcq(evaluate_mcq_request.question, evaluate_mcq_request.options, evaluate_mcq_request.correct_answer, evaluate_mcq_request.student_answer, evaluate_mcq_request.additional_info)
   return response
 
-@app.post("/evaluate_saq")
-def evaluate_answer(question: str, model_answer: str, student_answer: str, additional_info: bool = False):
-  response = answer_evaluator_model.evaluate_saq(question, model_answer, student_answer, additional_info)
+@app.post("/evaluatesaq/")
+def evaluate_answer(evaluate_saq_request: EvaluateSAQRequest):
+  response = answer_evaluator_model.evaluate_saq(evaluate_saq_request.question, evaluate_saq_request.model_answer, evaluate_saq_request.student_answer, evaluate_saq_request.additional_info)
   return response
 
-@app.post("/summarize")
-def summarize(notes: str, topic: str = None, examples: bool = False, context: bool = False):
-  response = summarizer.summarize(notes, topic, examples, context)
+@app.post("/summarize/")
+def summarize(summarize_request: SummarizeRequest):
+  response = summarizer.summarize(summarize_request.notes, summarize_request.topic, summarize_request.examples, summarize_request.context)
   return response
 
 

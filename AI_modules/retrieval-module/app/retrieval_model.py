@@ -9,15 +9,6 @@ from image_models import ImageCaptionModel
 from speech_models import SpeechRecognitionModel
 
 
-import torch
-#Use GPU if available
-if torch.cuda.is_available():
-    device = 'cuda'
-else:
-    device = 'cpu'
-
-
-
 class HybridSearch:
   def __init__(self, embedding_dim, dbname="database", user="postgres", password="admin", corpus_dict=dict()):
     self.embedding_dim = embedding_dim
@@ -30,8 +21,6 @@ class HybridSearch:
     conn.execute('CREATE EXTENSION IF NOT EXISTS vector')
     register_vector(conn)
     conn.commit()
-    conn.execute('DROP TABLE IF EXISTS vectordb')
-    conn.commit()
     conn.execute(f'CREATE TABLE IF NOT EXISTS vectordb (id serial PRIMARY KEY, embedding vector({self.embedding_dim}), filename text, text text, length integer)')
     conn.commit()
     conn.close()
@@ -42,7 +31,7 @@ class HybridSearch:
     pass
   
 
-  def split_document(self, document: str, chunk_size: int=8000, chunk_overlap: int=2000):
+  def split_document(self, document: str, chunk_size: int=4000, chunk_overlap: int=1500):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -159,7 +148,7 @@ class HybridSearch:
     return
 
 
-  def keyword_search(self, query, k=3):
+  def keyword_search(self, query, k=2):
     # Query the BM25 model
     query_tokens = bm25s.tokenize(query)
     full_corpus = []
@@ -182,7 +171,7 @@ class HybridSearch:
     return docs, filenames
 
 
-  def vector_search(self, query, k=3):
+  def vector_search(self, query, k=2):
     # Query the vector database
     embedding_model = EmbeddingModel()
     embedding = embedding_model.encode(query)

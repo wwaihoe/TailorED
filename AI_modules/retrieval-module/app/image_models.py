@@ -1,7 +1,14 @@
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForCausalLM 
 
-
+import torch
+#Use GPU if available
+if torch.cuda.is_available():
+    device = 'cuda'
+else:
+    device = 'cpu'
+    
+    
 class ImageCaptionModel():
   def __init__(self, model_str: str="microsoft/Florence-2-base-ft"):
     self.model = AutoModelForCausalLM.from_pretrained(model_str, trust_remote_code=True)

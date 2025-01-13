@@ -4,15 +4,10 @@ import re
 from dotenv import load_dotenv
 from LLM import LlamaCPP
 
-retrieval_name = "retrieval-module"
-retrieval_port = "8002"
+#retrieval_name = "retrieval-module"
+retrieval_name = "localhost"
+retrieval_port = "8000"
 
-import torch
-#Use GPU if available
-if torch.cuda.is_available():
-  device = 'cuda'
-else:
-  device = 'cpu'
 
 load_dotenv()
 
@@ -25,13 +20,18 @@ class QuestionGenerator:
   # MCQ
   def generate_mcq(self, topic):
     try:
-      res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  topic})
+      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
       res_json = res.json()
-      context = res_json["docs"]
-      context = "None" if context == "" else context
+      retrieved_docs = res_json["docs"]
+      context = ""
+      if len(retrieved_docs) > 0:
+        for doc in retrieved_docs:
+          context += doc + "\n\n-----------------------------------\n\n"
+      else:
+        context += "None"
       filenames = res_json["filenames"]
       generatemcq_system_prompt = f"""You are an assistant who creates assignment questions in MCQ format with 4 options for each question. 
-Create questions in this format: <question>{{question}}</question>\n<options>\n<option>{{option_a}}</option>\n<option>{{option_b}}</option>\n<option>{{option_c}}</option>\n<option>{{option_d}}</option>\n</options>\n<answer>{{a, b, c or d}}</answer>"""
+Create questions in this format: <question>{{question}}</question>\n<options>\n<option>{{option_a}}</option>\n<option>{{option_b}}</option>\n<option>{{option_c}}</option>\n<option>{{option_d}}</option>\n</options>\n<correct_answer>{{correct option from a, b, c or d (return only the alphabet)}}</correct_answer>"""
       generatemcq_prompt_template = f"""Create questions related to this topic: {topic}
 Refer to the following content:
 
@@ -40,6 +40,7 @@ Refer to the following content:
 MCQ Questions: """
       messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
       response = self.llm.chat_generate(messages)
+      print("MCQs generated: " + response)
       mcq_groups = self.parse_mcq(response)
       return mcq_groups
     
@@ -49,33 +50,39 @@ MCQ Questions: """
       return None
     
     
-  def parse_mcq(text):
-    # Optimized regex to match the question, options, and answer sections together
-    qa_matches = re.findall(r'<question>(.*?)</question>\s*<options>(.*?)</options>\s*<answer>(.*?)</answer>', text, re.DOTALL)
-    # Process matches in one loop
-    mcq_groups = []
-    for question, options, answer in qa_matches:
-      # Process options into a list
-      options_list = [opt.strip() for opt in re.findall(r'<option>(.*?)</option>', options)]
-      
-      # Add the question, options, and answer to the mcq_pairs list
-      mcq_groups.append({
-        "question": question.strip(),
-        "options": options_list,
-        "answer": answer.strip()
-      })
+  def parse_mcq(self, text):
+    try:
+      # Optimized regex to match the question, options, and answer sections together
+      qa_matches = re.findall(r'<question>(.*?)</question>\s*<options>(.*?)</options>\s*<correct_answer>(.*?)</correct_answer>', text, re.DOTALL)
+      # Process matches in one loop
+      mcq_groups = []
+      for question, options, answer in qa_matches:
+        # Process options into a list
+        options_list = [opt.strip() for opt in re.findall(r'<option>(.*?)</option>', options)]
+        
+        # Add the question, options, and answer to the mcq_pairs list
+        mcq_groups.append({
+          "question": question.strip(),
+          "options": options_list,
+          "answer": answer.strip()
+        })
+    except Exception as e:
+      print("Error in parsing MCQs")
+      print(e)
+      return None
+
     return mcq_groups
 
   #SAQ
   def generate_saq(self, topic):
     try:
-      res = requests.post(f"{self.vectorstore_url}/retrieve", json={"query":  topic})
+      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
       res_json = res.json()
       context = res_json["docs"]
       context = "None" if context == "" else context
       filenames = res_json["filenames"]
       generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer format. 
-Create questions in this format: <question>{{question}}</question>\n<answer>{{answer}}</answer>"""
+Create questions in this format: <question>{{question}}</question>\n<correct_answer>{{correct answer}}</correct_answer>"""
       generatesaq_prompt_template = f"""Create questions related to this topic: {topic}
 Refer to the following content:
 
@@ -94,21 +101,26 @@ SAQ Questions: """
     
   
 
-  def parse_saq(text):
-    # Optimized regex to match the question and answer sections together
-    qa_matches = re.findall(
-      r'<question>(.*?)</question>\s*<answer>(.*?)</answer>',
-      text,
-      re.DOTALL
-    )
-    # Process matches in one loop
-    qa_pairs = []
-    for question, answer in qa_matches:
-      # Add the question and answer to the qa_pairs list
-      qa_pairs.append({
-        "question": question.strip(),
-        "answer": answer.strip()
-      })
+  def parse_saq(self, text):
+    try:
+      # Optimized regex to match the question and answer sections together
+      qa_matches = re.findall(
+        r'<question>(.*?)</question>\s*<correct_answer>(.*?)</correct_answer>',
+        text,
+        re.DOTALL
+      )
+      # Process matches in one loop
+      qa_pairs = []
+      for question, answer in qa_matches:
+        # Add the question and answer to the qa_pairs list
+        qa_pairs.append({
+          "question": question.strip(),
+          "answer": answer.strip()
+        })
+    except Exception as e:
+      print("Error in parsing SAQs")
+      print(e)
+      return
     return qa_pairs
   
 

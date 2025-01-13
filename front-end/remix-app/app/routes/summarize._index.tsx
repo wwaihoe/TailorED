@@ -16,7 +16,7 @@ export default function Summarize() {
       </header>
       <main className="flex flex-col justify-center content-center items-center h-[90%] w-[90%] m-5 gap-6">
         <div className="grid grid-cols-4 gap-4">
-          {summaries.map((summary) => <SummaryTile name={summary.name} route={summary.route} />)}
+          {summaries.map((summary) => <SummaryTile key={summary.name} name={summary.name} route={summary.route} />)}
         </div>
         <Link to={"/summarize/create"} className="px-6 py-3 bg-red-400 rounded-xl border-2 border-zinc-300 text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400">
           Summarize Your Notes

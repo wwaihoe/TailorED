@@ -19,9 +19,6 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-class Filename(BaseModel):
-  filename: str
-
 class FileList(BaseModel):
   filesizes: list
 
@@ -37,12 +34,12 @@ class RetrievalDoc(BaseModel):
 def read_root():
   return {"Server": "On"}
 
-@app.get("/load")
+@app.get("/load/")
 def load_files():
   filesizes = hybrid_search.load_files()
   return FileList(filesizes=filesizes)
 
-@app.post("/upload")
+@app.post("/upload/")
 async def upload_document(file: UploadFile):
   if file.content_type in ["application/pdf", "text/plain"]:
     await hybrid_search.add_text_document(file, file.filename, file.size)
@@ -64,13 +61,13 @@ async def upload_document(file: UploadFile):
     raise HTTPException(status_code=404, detail="Only PDF/JPG/PNG/MP3 files are accepted!")
   return 
 
-@app.post("/remove")
-def remove_document(filename: Filename):
-  hybrid_search.remove_documents(filename.filename)
-  print("Removed: ", filename.filename)
+@app.delete("/remove/{filename}/")
+def remove_document(filename: str):
+  hybrid_search.remove_documents(filename)
+  print("Removed: ", filename)
   return
 
-@app.post("/retrieve")
+@app.post("/retrieve/")
 def retrieve_documents(retrieval_query: RetrievalQuery) -> RetrievalDoc:
   reranked_docs, all_filenames = hybrid_search.search(retrieval_query.query)
   return RetrievalDoc(docs=reranked_docs, filenames=list(all_filenames))

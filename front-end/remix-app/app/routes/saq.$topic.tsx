@@ -38,7 +38,7 @@ export async function action({
     inputs.push(entry);
   }
   try {
-    const response = await fetch(`${chatModuleURL}/evaluate_saq`, {
+    const response = await fetch(`${chatModuleURL}/evaluate_saq/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

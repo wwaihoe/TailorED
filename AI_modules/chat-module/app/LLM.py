@@ -9,7 +9,7 @@ class LlamaCPP():
       model_path=self.model_path,
       n_gpu_layers=-1,
       seed=1234,
-      n_ctx=8192,
+      n_ctx=5192,
       chat_format="llama-3"
     )
 
@@ -19,7 +19,7 @@ class LlamaCPP():
       "min_p": 0.5,
       "top_p": 1.0,
       "top_k": 0,
-      "max_tokens": 8192,
+      "max_tokens": 5192,
     }
     defaults.update(kwargs)
     self.args = defaults

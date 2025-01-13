@@ -3,6 +3,7 @@ import {
   data,
   Form,
   useActionData,
+  useLoaderData,
   useNavigation,
   useParams,
   useSubmit 
@@ -13,13 +14,36 @@ import type { MCQ } from "../types/types";
 
 
 //const chatModuleURL = "http://chat-module:8001";
+//const dataModuleURL = "http://data-module:8003";
 const chatModuleURL = "http://localhost:8001";
+const dataModuleURL = "http://localhost:8003";
+
+
+type MCQLoadData = {
+  topic: string;
+  mcqs: MCQ[];
+}
 
 
 export async function loader({
   params,
 }: LoaderFunctionArgs) {
-  return 1;
+  try {
+    const response = await fetch(`${dataModuleURL}/retrieve_mcq/${params.id}/`);
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    }
+    else {
+      console.log("Failed to load MCQ data.");
+      return null;
+    }
+  }
+  catch (error) {
+    console.log("Failed to load MCQ data.");
+    console.error(error);
+    return null;
+  }
 }
 
 
@@ -35,8 +59,8 @@ export async function action({
     const entry = {question: questionsJSON[i].question, options: questionsJSON[i].options, answer: questionsJSON[i].answer, response: formData.get(`mcq-${i}`)};
     inputs.push(entry);
   }
-  try {
-    const response = await fetch(`${chatModuleURL}/evaluate_mcq`, {
+  try { 
+    const response = await fetch(`${chatModuleURL}/evaluatemcq/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -48,18 +72,19 @@ export async function action({
       return json(data);
     }
     else {
-      alert("Failed to generate feedback.");
+      console.log("Failed to generate feedback.");
       return null;
     }
   } catch (error) {
     console.error(error);
-    alert("Failed to generate feedback.");
+    console.log("Failed to generate feedback.");
     return null;
   }
 
 }
 
 export default function MCQ() {
+  const data = useLoaderData<typeof loader>() as MCQLoadData;
   const params = useParams();
   const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
@@ -78,8 +103,8 @@ export default function MCQ() {
     event.preventDefault()
     if (formRef.current) {
       const submitFormData = new FormData(formRef.current);
-      submitFormData.append("questions", JSON.stringify(test_data));
-      submitFormData.append("length", test_data.length.toString());
+      submitFormData.append("questions", JSON.stringify(data));
+      submitFormData.append("length", data.mcqs.length.toString());
       submit(
         submitFormData,
         { method: "post" }
@@ -93,23 +118,33 @@ export default function MCQ() {
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
 
         <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-yellow-400 to-red-400">
-          <h1 className="text-2xl font-bold m-auto text-gray-100">MCQ Practice - {params.topic}</h1>
+          <h1 className="text-2xl font-bold m-auto text-gray-100">MCQ Practice - {data.topic}</h1>
         </header>
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
           <div className="w-screen max-w-5xl h-full">
             <Form method="post" ref={formRef} onSubmit={handleSubmit}>
-              {test_data.map((question, index) => (
+              {data.mcqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
-                  <div className="max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
+                  <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
                     <ul className="list-inside">
-                      {question.options.map((option, optionIndex) => (
-                        <div className="flex flex-row justify-between">
-                          <li key={optionIndex}>{(optionIndex + 10).toString(36).toUpperCase()}. {option}</li>
-                          <input type="radio" id={(index*4+optionIndex).toString()} name={`mcq-${index}`} value={(optionIndex + 10).toString(36).toUpperCase()} />
-                        </div>
-                      ))} 
+                      <div className="flex flex-row justify-between">
+                        <li key={0}>{(10).toString(36).toUpperCase()}. {question.option_a}</li>
+                        <input type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toUpperCase()} />
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <li key={1}>{(11).toString(36).toUpperCase()}. {question.option_b}</li>
+                        <input type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toUpperCase()} />
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <li key={2}>{(12).toString(36).toUpperCase()}. {question.option_c}</li>
+                        <input type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toUpperCase()} />
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <li key={3}>{(13).toString(36).toUpperCase()}. {question.option_d}</li>
+                        <input type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toUpperCase()} />
+                      </div>
                     </ul>
                   </div>
                 </div>

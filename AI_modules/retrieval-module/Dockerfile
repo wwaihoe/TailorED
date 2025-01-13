@@ -11,7 +11,7 @@ RUN apt install -y gcc
 RUN apt install -y git-all
 RUN apt install -y ffmpeg
 
-WORKDIR /app
+WORKDIR /code
 
 COPY ./requirements.txt requirements.txt
 
@@ -19,8 +19,8 @@ RUN python3 -m pip install --upgrade pip
 
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-RUN pip3 install --no-cache-dir --upgrade -r /app/requirements.txt
+RUN pip3 install --no-cache-dir --upgrade -r /code/requirements.txt
 
-COPY ./app /app
+COPY ./app app
 
-CMD ["python3", "-u", "main.py"]
+CMD ["fastapi", "run", "app/main.py", "--port", "8000"]

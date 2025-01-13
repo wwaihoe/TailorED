@@ -3,7 +3,7 @@ import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import type { ActionFunctionArgs } from "@remix-run/node";
 
 
-//const retrievalModuleURL = "http://retrieval-module:8002";
+//const retrievalModuleURL = "http://retrieval-module:8000";
 const retrievalModuleURL = "http://localhost:8000";
 
 type FileListing = {
@@ -13,7 +13,7 @@ type FileListing = {
 
 export async function loader() {
   try {
-    const response = await fetch(`${retrievalModuleURL}/load`);
+    const response = await fetch(`${retrievalModuleURL}/load/`);
     if (response.ok) {
       const data = await response.json();
       const filesizes = data.filesizes
@@ -41,12 +41,8 @@ export async function action({
   const formData = await request.formData();
   const filename = formData.get("filename");
   try {
-    const response = await fetch(`${retrievalModuleURL}/remove`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ filename: filename })
+    const response = await fetch(`${retrievalModuleURL}/remove/${filename}/`, {
+      method: "DELETE",
     });
     if (response.ok) {
       console.log("File deleted: " + filename);
@@ -78,7 +74,7 @@ export default function fileUpload() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const response = await fetch(`${retrievalModuleURL}/upload`, {
+      const response = await fetch(`${retrievalModuleURL}/upload/`, {
         method: "POST",
         body: formData
       });
@@ -98,7 +94,7 @@ export default function fileUpload() {
 
 
   return (
-    <div className="flex flex-col rounded-lg p-3 items-start h-fit mt-6">
+    <div className="flex flex-col rounded-lg p-3 items-start h-fit">
       <label htmlFor="document">Upload documents here:</label>
       <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
       file:mr-2 file:py-1 file:px-2
@@ -109,7 +105,7 @@ export default function fileUpload() {
       onChange={handleUpload} />
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
       {isUploading && 
-      <div className='select-none flex space-x-2 justify-center items-center'>
+      <div className='select-none flex space-x-2 justify-center items-center mt-5'>
         <span className='sr-only'>Loading...</span>
         <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]'></div>
         <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]'></div>

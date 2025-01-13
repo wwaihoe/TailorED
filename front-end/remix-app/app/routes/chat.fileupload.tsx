@@ -3,7 +3,7 @@ import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import type { ActionFunctionArgs } from "@remix-run/node";
 
 
-//const retrievalModuleURL = "http://retrieval-module:8002";
+//const retrievalModuleURL = "http://retrieval-module:8000";
 const retrievalModuleURL = "http://localhost:8000";
 
 type FileListing = {
@@ -13,7 +13,7 @@ type FileListing = {
 
 export async function loader() {
   try {
-    const response = await fetch(`${retrievalModuleURL}/load`);
+    const response = await fetch(`${retrievalModuleURL}/load/`);
     if (response.ok) {
       const data = await response.json();
       const filesizes = data.filesizes
@@ -41,12 +41,8 @@ export async function action({
   const formData = await request.formData();
   const filename = formData.get("filename");
   try {
-    const response = await fetch(`${retrievalModuleURL}/remove`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ filename: filename })
+    const response = await fetch(`${retrievalModuleURL}/remove/${filename}/`, {
+      method: "DELETE",
     });
     if (response.ok) {
       console.log("File deleted: " + filename);
@@ -78,7 +74,7 @@ export default function fileUpload() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const response = await fetch(`${retrievalModuleURL}/upload`, {
+      const response = await fetch(`${retrievalModuleURL}/upload/`, {
         method: "POST",
         body: formData
       });

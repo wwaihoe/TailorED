@@ -41,7 +41,7 @@ export default function saq() {
     const formData = new FormData();
     formData.append("document", file);
     try {
-      const response = await fetch(`${retrievalModuleURL}/upload`, {
+      const response = await fetch(`${retrievalModuleURL}/upload/`, {
         method: "POST",
         body: formData
       });
