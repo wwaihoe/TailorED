@@ -20,16 +20,24 @@ export default function Index() {
   return (
     <div className="flex w-screen h-screen items-center justify-center bg-zinc-900">
       <div className="flex flex-col items-center gap-16">
-        <header className="flex flex-col items-center gap-9">
+        <header className="flex flex-col gap-9">
           <h1 className="leading text-3xl font-bold text-gray-800 dark:text-gray-100">
             Welcome to <span className="sr-only">TailorED</span>
           </h1>
-          <div className="size-24">
-            <img
-              src="/logo.png"
-              alt="TailorED"
-              className="block w-full object-cover"
-            />
+          <div className="items-start">
+            <div className="size-24 flex flex-row items-center">
+              <img
+                src="/logo.png"
+                alt="TailorED"
+                className="block w-full object-cover"
+              />
+              <p className="text-3xl font-light text-white">
+                Tailor
+              </p>
+              <p className="text-3xl font-bold text-red-200">
+                ED
+              </p>
+            </div>
           </div>
         </header>
         <main>
@@ -45,7 +53,7 @@ export default function Index() {
 
 export function Task({ name, route }: TaskObj) {
   return (
-    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-red-400">
+    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
       <h1>{name}</h1>
     </Link>
   );

@@ -44,24 +44,40 @@ class ChatResponse(BaseModel):
 class Topic(BaseModel):
   topic: str
 
-class EvaluateMCQRequest(BaseModel):
+class MCQ(BaseModel):
+  id: int
   question: str
-  options: list[str]
+  option_a: str
+  option_b: str
+  option_c: str
+  option_d: str
+  correct_option: str
+
+class SAQ(BaseModel):
+  question: str
   correct_answer: str
-  student_answer: str
-  additional_info: bool=False
+
+class EvaluateMCQRequest(BaseModel):
+  mcq: MCQ
+  chosen_option: str
+  additional_info: bool | None=False
+
+class EvaluateMCQsRequest(BaseModel):
+  evaluate_mcqs_request: List[EvaluateMCQRequest]
 
 class EvaluateSAQRequest(BaseModel):
-  question: str
-  model_answer: str
-  student_answer: str
-  additional_info: bool=False
+  saq: SAQ
+  input_answer: str
+  additional_info: bool | None=False
+
+class EvaluateSAQsRequest(BaseModel):
+  evaluate_saqs_request: List[EvaluateSAQRequest]
 
 class SummarizeRequest(BaseModel):
   notes: str
   topic: str
-  examples: bool=False
-  context: bool=False
+  examples: bool | None=False
+  context: bool | None=False
 
 
 @app.get("/")
@@ -73,11 +89,11 @@ def get_response(chat_request: ChatRequest):
   response = qa_chain_model.generate(chat_request.messages)
   return ChatResponse(output=response["content"], filenames=response["filenames"])
 
-@app.post("/generatemcq/")
+@app.post("/generate_mcq/")
 def generate_mcq(topic: Topic):
   mcq_groups = question_generator_model.generate_mcq(topic.topic)
   if mcq_groups is None:
-    return None
+    return
   question_set_id = str(uuid4())
   try:
     body = {"question_set_id": question_set_id, "topic": topic.topic, "mcqs": mcq_groups}
@@ -85,27 +101,46 @@ def generate_mcq(topic: Topic):
     response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_mcq/", json=body)
     if not response.ok:
       print("Error in saving MCQs")
-      return None
+      return 
   except Exception as e:
     print("Error in saving MCQs")
     print(e)
-    return None
-  return mcq_groups
+    return
+  return
 
-@app.post("/generatesaq/")
+@app.post("/generate_saq/")
 def generate_saq(topic: Topic):
   saq_groups = question_generator_model.generate_saq(topic.topic)
   return saq_groups
 
-@app.post("/evaluatemcq/")
-def evaluate_answer(evaluate_mcq_request: EvaluateMCQRequest):
-  response = answer_evaluator_model.evaluate_mcq(evaluate_mcq_request.question, evaluate_mcq_request.options, evaluate_mcq_request.correct_answer, evaluate_mcq_request.student_answer, evaluate_mcq_request.additional_info)
+@app.post("/evaluate_mcq/")
+def evaluate_mcq(evaluate_mcq_request: EvaluateMCQRequest):
+  response = answer_evaluator_model.evaluate_mcq(evaluate_mcq_request.mcq, evaluate_mcq_request.chosen_option, evaluate_mcq_request.additional_info)
   return response
 
-@app.post("/evaluatesaq/")
-def evaluate_answer(evaluate_saq_request: EvaluateSAQRequest):
-  response = answer_evaluator_model.evaluate_saq(evaluate_saq_request.question, evaluate_saq_request.model_answer, evaluate_saq_request.student_answer, evaluate_saq_request.additional_info)
+@app.post("/evaluate_mcqs/")
+def evaluate_mcqs(evaluate_mcqs_request: EvaluateMCQsRequest):
+  responses = []
+  for evaluate_mcq_request in evaluate_mcqs_request.evaluate_mcqs_request:
+    response = {}
+    response["mcq"] = evaluate_mcq_request.mcq
+    response["chosen_option"] = evaluate_mcq_request.chosen_option
+    response["feedback"] = answer_evaluator_model.evaluate_mcq(evaluate_mcq_request.mcq, evaluate_mcq_request.chosen_option, evaluate_mcq_request.additional_info)
+    responses.append(response)
+  return {"responses": responses}
+
+@app.post("/evaluate_saq/")
+def evaluate_saq(evaluate_saq_request: EvaluateSAQRequest):
+  response = answer_evaluator_model.evaluate_saq(evaluate_saq_request.saq, evaluate_saq_request.input_answer, evaluate_saq_request.additional_info)
   return response
+
+@app.post("/evaluate_saqs/")
+def evaluate_saqs(evaluate_saqs_request: EvaluateSAQsRequest):
+  responses = []
+  for evaluate_saq_request in evaluate_saqs_request.evaluate_saqs_request:
+    response = answer_evaluator_model.evaluate_saq(evaluate_saq_request.saq, evaluate_saq_request.input_answer, evaluate_saq_request.additional_info)
+    responses.append(response)  
+  return responses
 
 @app.post("/summarize/")
 def summarize(summarize_request: SummarizeRequest):

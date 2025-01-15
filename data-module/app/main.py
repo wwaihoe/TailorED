@@ -24,8 +24,11 @@ conn = psycopg.connect(f"dbname={dbname} user={user} password={password}")
 
 class MCQ(BaseModel):
   question: str
-  options: list[str]
-  answer: str
+  option_a: str
+  option_b: str
+  option_c: str
+  option_d: str
+  correct_option: str
 
 class SaveMCQRequest(BaseModel):
   question_set_id: str
@@ -36,7 +39,7 @@ class RetrieveMCQRequest(BaseModel):
   question_set_id: int
 
 # Create MCQ table
-conn.execute('CREATE TABLE IF NOT EXISTS mcq (id serial PRIMARY KEY, question_set_id text, topic text, question text, option_a text, option_b text, option_c text, option_d text, answer text)')
+conn.execute('CREATE TABLE IF NOT EXISTS mcq (id serial PRIMARY KEY, question_set_id text, topic text, question text, option_a text, option_b text, option_c text, option_d text, correct_option text)')
 conn.commit()
 
 @app.post("/save_mcq/")
@@ -44,7 +47,7 @@ def mcq(save_mcq_request: SaveMCQRequest):
   try:
     # Insert MCQ data
     for mcq in save_mcq_request.mcqs:
-      conn.execute(f'INSERT INTO mcq (question_set_id, topic, question, option_a, option_b, option_c, option_d, answer) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', (save_mcq_request.question_set_id, save_mcq_request.topic, mcq.question, mcq.options[0], mcq.options[1], mcq.options[2], mcq.options[3], mcq.answer))
+      conn.execute(f'INSERT INTO mcq (question_set_id, topic, question, option_a, option_b, option_c, option_d, correct_option) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', (save_mcq_request.question_set_id, save_mcq_request.topic, mcq.question, mcq.option_a, mcq.option_b, mcq.option_c, mcq.option_d, mcq.correct_option))
     conn.commit()
     return
 
@@ -74,10 +77,10 @@ def retrieve_mcq(question_set_id: str):
     # Retrieve Topic
     topic = conn.execute('SELECT topic FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchone()[0]
     # Retrieve MCQs
-    results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, answer FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, correct_option FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchall()
     mcqs = []
-    for id, question, option_a, option_b, option_c, option_d, answer in results:
-      mcqs.append({"id": id, "question": question, "option_a": option_a, "option_b": option_b, "option_c": option_c, "option_d": option_d, "answer": answer})
+    for id, question, option_a, option_b, option_c, option_d, correct_option in results:
+      mcqs.append({"id": id, "question": question, "option_a": option_a, "option_b": option_b, "option_c": option_c, "option_d": option_d, "correct_option": correct_option})
     return {"topic": topic, "mcqs": mcqs}
 
   except Exception as e:

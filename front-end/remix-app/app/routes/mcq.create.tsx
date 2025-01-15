@@ -23,7 +23,7 @@ export async function action({
   const formData = await request.formData();  
   const topic = formData.get("topic") as string;
   try {
-      const response = await fetch(`${chatModuleURL}/generatemcq/`, {
+      const response = await fetch(`${chatModuleURL}/generate_mcq/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

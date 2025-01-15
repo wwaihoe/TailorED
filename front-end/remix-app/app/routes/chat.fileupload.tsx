@@ -100,8 +100,8 @@ export default function fileUpload() {
       file:mr-2 file:py-1 file:px-2
       file:rounded-lg file:border-0
       file:text-sm file:font-medium
-      file:bg-red-400 file:text-white
-      hover:file:cursor-pointer hover:file:bg-red-500"
+      file:bg-blue-400 file:text-white
+      hover:file:cursor-pointer hover:file:bg-blue-500"
       onChange={handleUpload} />
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
       {isUploading && 
@@ -126,7 +126,7 @@ export default function fileUpload() {
                 <div className="rounded-full h-5 w-5 bg-white animate-ping"></div>
               </div>
               : 
-              <button type="submit" className="flex text-center select-none pb-0.5 px-2 bg-red-400 rounded-full text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400">
+              <button type="submit" className="flex text-center select-none pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">
                 x
               </button>
               }

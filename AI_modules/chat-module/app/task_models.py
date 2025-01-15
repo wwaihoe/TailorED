@@ -31,7 +31,7 @@ class QuestionGenerator:
         context += "None"
       filenames = res_json["filenames"]
       generatemcq_system_prompt = f"""You are an assistant who creates assignment questions in MCQ format with 4 options for each question. 
-Create questions in this format: <question>{{question}}</question>\n<options>\n<option>{{option_a}}</option>\n<option>{{option_b}}</option>\n<option>{{option_c}}</option>\n<option>{{option_d}}</option>\n</options>\n<correct_answer>{{correct option from a, b, c or d (return only the alphabet)}}</correct_answer>"""
+Create questions in this format: <question>{{question}}</question>\n<options>\n<option>{{option_a}}</option>\n<option>{{option_b}}</option>\n<option>{{option_c}}</option>\n<option>{{option_d}}</option>\n</options>\n<correct_option>{{correct option from a, b, c or d (return only the alphabet)}}</correct_option>"""
       generatemcq_prompt_template = f"""Create questions related to this topic: {topic}
 Refer to the following content:
 
@@ -53,18 +53,21 @@ MCQ Questions: """
   def parse_mcq(self, text):
     try:
       # Optimized regex to match the question, options, and answer sections together
-      qa_matches = re.findall(r'<question>(.*?)</question>\s*<options>(.*?)</options>\s*<correct_answer>(.*?)</correct_answer>', text, re.DOTALL)
+      qa_matches = re.findall(r'<question>(.*?)</question>\s*<options>(.*?)</options>\s*<correct_option>(.*?)</correct_option>', text, re.DOTALL)
       # Process matches in one loop
       mcq_groups = []
       for question, options, answer in qa_matches:
         # Process options into a list
-        options_list = [opt.strip() for opt in re.findall(r'<option>(.*?)</option>', options)]
+        options_list = [opt.strip() for opt in re.findall(r'<option>(.*?)</option>', options)][:4]
         
         # Add the question, options, and answer to the mcq_pairs list
         mcq_groups.append({
           "question": question.strip(),
-          "options": options_list,
-          "answer": answer.strip()
+          "option_a": options_list[0],
+          "option_b": options_list[1],
+          "option_c": options_list[2],
+          "option_d": options_list[3],
+          "correct_option": answer.strip()
         })
     except Exception as e:
       print("Error in parsing MCQs")
@@ -72,6 +75,7 @@ MCQ Questions: """
       return None
 
     return mcq_groups
+
 
   #SAQ
   def generate_saq(self, topic):
@@ -99,7 +103,6 @@ SAQ Questions: """
       print(e)
       return None
     
-  
 
   def parse_saq(self, text):
     try:
@@ -115,7 +118,7 @@ SAQ Questions: """
         # Add the question and answer to the qa_pairs list
         qa_pairs.append({
           "question": question.strip(),
-          "answer": answer.strip()
+          "correct_answer": answer.strip()
         })
     except Exception as e:
       print("Error in parsing SAQs")
@@ -130,22 +133,25 @@ class AnswerEvaluator:
     self.vectorstore_url = vectorstore_url
     self.llm = llm
 
-  def evaluate_mcq(self, question, options, correct_answer, student_answer, additional_info=False):
+  def evaluate_mcq(self, mcq, chosen_option, additional_info=False):
     try:
       evaluatemcq_system_prompt = "You are an expert in the subject, evaluate the answer to a given question."
       additional_info_prompt = "Also offer additional information or clarifications in helping to understand the topic."
-      evaluatemcq_prompt_template = f"""Evaluate the answer for a multiple choice question. Read the question, correct_option and chosen_option carefully. \
-Then, provide constructive feedback if the answer is incorrect. Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. \
+      evaluatemcq_prompt_template = f"""Evaluate the chosen_option for a multiple choice question. Read the question, correct_option and chosen_option carefully. \
+Then, provide constructive feedback if the chosen_option is incorrect. Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. \
 Otherwise, provide positive feedback. \
 {additional_info_prompt if additional_info else ""} \
 Give your answer in full sentences. 
 
-<question>{question}</question>
+<question>{mcq.question}</question>
 <options>
-{"\n".join([f"<option>{option}</option>" for option in options])}
+<option_a>{mcq.option_a}</option_a>
+<option_b>{mcq.option_b}</option_b>
+<option_c>{mcq.option_c}</option_c>
+<option_d>{mcq.option_d}</option_d>
 </options>
-<correct_option>{correct_answer}</correct_option>
-<chosen_option>{student_answer}</chosen_option>"""
+<correct_option>{mcq.correct_option}</correct_option>
+<chosen_option>{chosen_option}</chosen_option>"""
       messages = [{"role": "system", "content": evaluatemcq_system_prompt}, {"role": "user", "content": evaluatemcq_prompt_template}]
       response = self.llm.chat_generate(messages)
       return response
@@ -154,18 +160,19 @@ Give your answer in full sentences.
       print(e)
       return None
     
-  def evaluate_saq(self, question, model_answer, student_answer, additional_info=False):
+
+  def evaluate_saq(self, saq, input_answer, additional_info=False):
     try:
       evaluatesaq_system_prompt = "You are an expert in the subject, evaluate the answer to a given question."
       additional_info_prompt = "Also offer additional information or clarifications in helping to understand the topic."
-      evaluatesaq_prompt_template = f"""Evaluate the answer for a short answer question. Read the question, model_answer and answer carefully. \
+      evaluatesaq_prompt_template = f"""Evaluate the input_answer for a short answer question. Read the question, correct_answer and input_answer carefully. \
 Then, provide constructive feedback on how well the answer answers the question. \
 Your feedback should highlight any correct points made and point out inaccuracies or areas of understanding which may need improvement.{additional_info_prompt if additional_info else ""}:
 Give your answer in full sentences. Do not mention the model answer in your feedback.
 
-<question>{question}</question>
-<model_answer>{model_answer}</model_answer>
-<answer>{student_answer}</answer>"""
+<question>{saq.question}</question>
+<correct_answer>{saq.correct_answer}</correct_answer>
+<input_answer>{input_answer}</input_answer>"""
       messages = [{"role": "system", "content": evaluatesaq_system_prompt}, {"role": "user", "content": evaluatesaq_prompt_template}]
       response = self.llm.chat_generate(messages)
       return response

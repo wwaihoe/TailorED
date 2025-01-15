@@ -93,8 +93,8 @@ export default function Chat() {
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
 
-        <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-yellow-400 to-red-400">
-          <h1 className="text-2xl font-bold m-auto text-gray-100">Chat</h1>
+        <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
+          <h1 className="text-3xl font-bold m-auto text-black">Chat</h1>
         </header>
 
         <main className="flex flex-row w-full h-[90%] bg-zinc-900">
@@ -124,7 +124,7 @@ export default function Chat() {
                 </div>
               ))}
               {isSubmitting && <div className="flex select-none">
-                <div className="rounded-full h-5 w-5 bg-white animate-ping"></div>
+                <div className="rounded-full h-5 w-5 bg-blue-300 animate-ping"></div>
               </div>}
             </div>
             <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
@@ -136,7 +136,7 @@ export default function Chat() {
                   value={input}
                   ref={inputRef}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 bg-zinc-700 text-gray-200 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full"
+                  className="flex-1 bg-zinc-700 text-gray-200 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400 w-full"
                   placeholder="Type your message..."
                 /> :
                 <input
@@ -144,13 +144,13 @@ export default function Chat() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full"
+                  className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400 w-full"
                   placeholder="Type your message..."
                 />
                 }
                 {!isSubmitting? 
                 <button type="submit"
-                  className="px-6 py-3 bg-red-400 rounded-md text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400"
+                  className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400"
                 >
                   Send
                 </button> :
