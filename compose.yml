@@ -6,14 +6,37 @@ services:
   front-end: #web application front-end
     build: #build docker image using Dockerfile in front-end directory
       context: ./front-end
-    environment: #set NODE_ENV environment variable to "production"
+      target: production
+    environment: #set NODE_ENV environment variable
       NODE_ENV: production
     networks: #connect service to bridgenetwork
       - bridgenetwork
-    ports: #map host port 8002 to port 8002 of webapp front end service
-      - 8002:8002
+    ports: #map host port 3000 and 24678 to port 3000 and 24678 of webapp front end service
+      - 3000:3000
+      - 24678:24678
     depends_on: #starts service after chat-module
       - chat-module
+    profiles:
+      - production
+
+  front-end-dev: #web application front-end for development
+    build: #build docker image using Dockerfile in front-end directory
+      context: ./front-end
+      target: development
+    environment: #set NODE_ENV environment variable
+      NODE_ENV: development
+    volumes:
+      - ./front-end:/app
+      - /app/remix-app/node_modules
+    networks: #connect service to bridgenetwork
+      - bridgenetwork
+    ports: #map host port 3000 and 24678 to port 3000 and 24678 of webapp front end service
+      - 3000:3000
+      - 24678:24678
+    depends_on: #starts service after chat-module
+      - chat-module
+    profiles:
+      - development
 
   chat-module: #chat-module
     build: #build docker image using Dockerfile in chat-module directory
@@ -42,7 +65,7 @@ services:
     ports: #map host port 8002 to port 8002 of retrieval-module service
       - 8000:8000
     depends_on: #starts service after db
-      - db
+      - data-module
     volumes: #create volume "/retrieval-data" in container that is mapped to "/retrieval-data" in local directory of host machine that persists data
       - ./retrieval-data:/retrieval-data
     deploy:
@@ -61,10 +84,11 @@ services:
     ports: #map host port 8003 to port 8003 of data-module service
       - 8003:8003
     depends_on: #starts service after db
-      - db
+      db:
+        condition: service_healthy
 
   db: #database
-    image: postgres:latest
+    image: pgvector/pgvector:pg17
     networks:
       - bridgenetwork
     environment:
@@ -80,3 +104,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+volumes:
+  postgres-data:

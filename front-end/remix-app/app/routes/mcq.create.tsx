@@ -11,10 +11,8 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 
 
-//const chatModuleURL = "http://chat-module:8001";
-//const retrievalModuleURL = "http://retrieval-module:8002";
-const chatModuleURL = "http://localhost:8001";
-const retrievalModuleURL = "http://localhost:8002";
+const chatModuleURLServer = "http://chat-module:8001";
+const chatModuleURLClient = "http://localhost:8001";
 
 
 export async function action({
@@ -23,7 +21,7 @@ export async function action({
   const formData = await request.formData();  
   const topic = formData.get("topic") as string;
   try {
-      const response = await fetch(`${chatModuleURL}/generate_mcq/`, {
+      const response = await fetch(`${chatModuleURLServer}/generate_mcq/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -58,14 +56,14 @@ export default function MCQCreate() {
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-yellow-400 to-red-400">
+      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
         <h1 className="text-2xl font-bold m-auto text-gray-100">Create MCQ</h1>
       </header>
       <main className="flex h-[90%] w-[90%] justify-center">
-        <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-4xl h-fit">
+        <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-2xl w-full h-fit">
           <Outlet />
-          <Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="flex flex-col justify-center content-center items-center w-full h-fit">
-            <div className="flex flex-col gap-5 w-full h-full"> 
+          <Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="flex flex-col justify-center content-center items-center h-fit p-3">
+            <div className="flex flex-col gap-5 h-full w-full"> 
               {!isSubmitting? 
               <div className="flex flex-col gap-3">
                 <input
@@ -75,11 +73,11 @@ export default function MCQCreate() {
                   value={input}
                   ref={inputRef}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full max-w-4xl"
+                  className="flex-1 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
                   placeholder="Type the topic for MCQs..."
                 />
                 <button type="submit"
-                  className="px-6 py-3 bg-red-400 rounded-md text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400"
+                  className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-white"
                 >
                   Create MCQs
                 </button>

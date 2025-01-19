@@ -14,10 +14,10 @@ import { json } from "@remix-run/node";
 import type { MCQ } from "../types/types";
 
 
-//const chatModuleURL = "http://chat-module:8001";
-//const dataModuleURL = "http://data-module:8003";
-const chatModuleURL = "http://localhost:8001";
-const dataModuleURL = "http://localhost:8003";
+const chatModuleURLServer = "http://chat-module:8001";
+const dataModuleURLServer = "http://data-module:8003";
+const chatModuleURLClient = "http://localhost:8001";
+const dataModuleURLClient = "http://localhost:8003";
 
 
 type MCQLoadData = {
@@ -36,7 +36,7 @@ export async function loader({
   params,
 }: LoaderFunctionArgs) {
   try {
-    const response = await fetch(`${dataModuleURL}/retrieve_mcq/${params.id}/`);
+    const response = await fetch(`${chatModuleURLServer}/retrieve_mcq/${params.id}/`);
     if (response.ok) {
       const data = await response.json();
       return data;
@@ -71,7 +71,7 @@ export async function action({
   const body = {"evaluate_mcqs_request": evaluate_mcqs_request};
   console.log(evaluate_mcqs_request);
   try { 
-    const response = await fetch(`${chatModuleURL}/evaluate_mcqs/`, {
+    const response = await fetch(`${chatModuleURLServer}/evaluate_mcqs/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

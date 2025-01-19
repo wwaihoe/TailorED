@@ -12,10 +12,8 @@ import { json } from "@remix-run/node";
 import type { SAQ } from "../types/types";
 
 
-//const chatModuleURL = "http://chat-module:8001";
-//const retrievalModuleURL = "http://retrieval-module:8002";
-const chatModuleURL = "http://localhost:8001";
-const retrievalModuleURL = "http://localhost:8002";
+const chatModuleURLServer = "http://chat-module:8001";
+const chatModuleURLClient = "http://localhost:8001";
 
 
 export async function loader({
@@ -38,7 +36,7 @@ export async function action({
     inputs.push(entry);
   }
   try {
-    const response = await fetch(`${chatModuleURL}/evaluate_saq/`, {
+    const response = await fetch(`${chatModuleURLServer}/evaluate_saq/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

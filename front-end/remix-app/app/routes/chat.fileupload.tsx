@@ -3,8 +3,8 @@ import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import type { ActionFunctionArgs } from "@remix-run/node";
 
 
-//const retrievalModuleURL = "http://retrieval-module:8000";
-const retrievalModuleURL = "http://localhost:8000";
+const retrievalModuleURLServer = "http://retrieval-module:8000";
+const retrievalModuleURLClient = "http://localhost:8000";
 
 type FileListing = {
   name: string;
@@ -13,7 +13,7 @@ type FileListing = {
 
 export async function loader() {
   try {
-    const response = await fetch(`${retrievalModuleURL}/load/`);
+    const response = await fetch(`${retrievalModuleURLServer}/load/`);
     if (response.ok) {
       const data = await response.json();
       const filesizes = data.filesizes
@@ -41,7 +41,7 @@ export async function action({
   const formData = await request.formData();
   const filename = formData.get("filename");
   try {
-    const response = await fetch(`${retrievalModuleURL}/remove/${filename}/`, {
+    const response = await fetch(`${retrievalModuleURLServer}/remove/${filename}/`, {
       method: "DELETE",
     });
     if (response.ok) {
@@ -74,7 +74,7 @@ export default function fileUpload() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const response = await fetch(`${retrievalModuleURL}/upload/`, {
+      const response = await fetch(`${retrievalModuleURLClient}/upload/`, {
         method: "POST",
         body: formData
       });
@@ -115,11 +115,11 @@ export default function fileUpload() {
         {files && files.map((file, index) => (
           <li key={index} className="mt-2 text-sm text-grey-500">
           <div className="flex flex-row gap-1 border-2 border-zinc-400 rounded-xl justify-between">
-            <div className="flex flex-row gap-32 ml-1">
+            <div className="flex flex-row justify-between ml-1 w-5/6">
               <p>{file.name}</p>
               <p>{file.size} Chars</p>
             </div>
-            <fetcher.Form method="post">
+            <fetcher.Form method="post" className="flex w-1/6 justify-end">
               <input type="hidden" name="filename" value={file.name}/>
               {isRemoving ?
               <div className="flex justify-center items-center">

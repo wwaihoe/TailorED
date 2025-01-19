@@ -19,13 +19,13 @@ type TaskObj = {
 export default function Index() {
   return (
     <div className="flex w-screen h-screen items-center justify-center bg-zinc-900">
-      <div className="flex flex-col items-center gap-16">
-        <header className="flex flex-col gap-9">
+      <main className="flex flex-col items-center justify-center gap-10">
+        <div className="flex flex-col gap-7">
           <h1 className="leading text-3xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome to <span className="sr-only">TailorED</span>
+              Welcome to <span className="sr-only">TailorED</span>
           </h1>
           <div className="items-start">
-            <div className="size-24 flex flex-row items-center">
+            <div className="size-20 flex flex-row items-center">
               <img
                 src="/logo.png"
                 alt="TailorED"
@@ -39,13 +39,11 @@ export default function Index() {
               </p>
             </div>
           </div>
-        </header>
-        <main>
-          <div className="grid grid-cols-4 gap-4">
-            {tasks.map((task) => <Task key={task.name} name={task.name} route={task.route} />)}
-          </div>
-        </main>
-      </div>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {tasks.map((task) => <Task key={task.name} name={task.name} route={task.route} />)}
+        </div>
+      </main>
     </div>
   );
 }

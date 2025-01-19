@@ -4,8 +4,8 @@ import re
 from dotenv import load_dotenv
 from LLM import LlamaCPP
 
-#retrieval_name = "retrieval-module"
-retrieval_name = "localhost"
+retrieval_name = "retrieval-module"
+#retrieval_name = "localhost"
 retrieval_port = "8000"
 
 

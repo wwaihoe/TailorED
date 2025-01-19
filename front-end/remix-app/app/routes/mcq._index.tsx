@@ -5,8 +5,8 @@ import {
 import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 
-//const dataModuleURL = "http://data-module:8003";
-const dataModuleURL = "http://localhost:8003";
+const dataModuleURLServer = "http://data-module:8003";
+const dataModuleURLClient = "http://localhost:8003";
 
 
 type Topic = {
@@ -22,7 +22,7 @@ type TopicObj = {
 
 export async function loader() {
   try {
-    const response = await fetch(`${dataModuleURL}/retrieve_mcq_topics/`);
+    const response = await fetch(`${dataModuleURLServer}/retrieve_mcq_topics/`);
     if (response.ok) {
       const data = await response.json();
       console.log("Topics loaded successfully: ", data.topics);

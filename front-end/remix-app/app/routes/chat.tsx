@@ -11,10 +11,9 @@ import {
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 
-//const chatModuleURL = "http://chat-module:8001";
-//const retrievalModuleURL = "http://retrieval-module:8002";
-const chatModuleURL = "http://localhost:8001";
-const retrievalModuleURL = "http://localhost:8000";
+const chatModuleURLServer = "http://chat-module:8001";
+const chatModuleURLClient = "http://localhost:8001";
+
 
 type Message = {
   role: string;
@@ -31,7 +30,7 @@ export async function action({
   const prevMessageJSON = prevMessages ? JSON.parse(prevMessages as string) : [];
   const inputMessages = [...prevMessageJSON, { role: "user", content: query }];
   try {
-    const response = await fetch(`${chatModuleURL}/chat/`, {
+    const response = await fetch(`${chatModuleURLServer}/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -150,7 +149,7 @@ export default function Chat() {
                 }
                 {!isSubmitting? 
                 <button type="submit"
-                  className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400"
+                  className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-white"
                 >
                   Send
                 </button> :

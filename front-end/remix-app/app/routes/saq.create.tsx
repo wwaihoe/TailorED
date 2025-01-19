@@ -9,10 +9,10 @@ import {
 import type { SAQ } from "../types/types";
 
 
-//const chatModuleURL = "http://chat-module:8001";
-//const retrievalModuleURL = "http://retrieval-module:8002";
-const chatModuleURL = "http://localhost:8001";
-const retrievalModuleURL = "http://localhost:8002";
+const chatModuleURLServer = "http://chat-module:8001";
+const retrievalModuleURLServer = "http://retrieval-module:8002";
+const chatModuleURLClient = "http://localhost:8001";
+const retrievalModuleURLClient = "http://localhost:8002";
 
 type TopicObj = {
   name: string;
@@ -41,7 +41,7 @@ export default function saq() {
     const formData = new FormData();
     formData.append("document", file);
     try {
-      const response = await fetch(`${retrievalModuleURL}/upload/`, {
+      const response = await fetch(`${retrievalModuleURLClient}/upload/`, {
         method: "POST",
         body: formData
       });

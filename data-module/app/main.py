@@ -16,10 +16,13 @@ app.add_middleware(
   allow_headers=["*"],
 )
 # Setup postgres
+#host="localhost"
+host="db"
+port="5432"
 dbname="database"
 user="postgres"
 password="admin"
-conn = psycopg.connect(f"dbname={dbname} user={user} password={password}")
+conn = psycopg.connect(f"host={host} port={port} dbname={dbname} user={user} password={password}")
 
 
 class MCQ(BaseModel):

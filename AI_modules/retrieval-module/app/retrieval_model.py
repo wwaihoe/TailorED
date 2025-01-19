@@ -10,14 +10,16 @@ from speech_models import SpeechRecognitionModel
 
 
 class HybridSearch:
-  def __init__(self, embedding_dim, dbname="database", user="postgres", password="admin", corpus_dict=dict()):
+  def __init__(self, embedding_dim, host="db", port="5432", dbname="database", user="postgres", password="admin", corpus_dict=dict()):
     self.embedding_dim = embedding_dim
+    self.host = host
+    self.port = port
     self.dbname = dbname 
     self.user = user
     self.password = password
     self.retriever = bm25s.BM25()
     # Setup postgres
-    conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
+    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
     conn.execute('CREATE EXTENSION IF NOT EXISTS vector')
     register_vector(conn)
     conn.commit()
@@ -63,7 +65,7 @@ class HybridSearch:
 
     try:
       # Add documents to the vector database
-      conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
+      conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
       # Remove existing documents with the same filename
       conn.execute('DELETE FROM vectordb WHERE filename = %s', (filename,))
       # Embed the corpus
@@ -141,7 +143,7 @@ class HybridSearch:
     self.retriever.index(corpus_tokens)
 
     # Remove documents from the vector database
-    conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
+    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
     conn.execute('DELETE FROM vectordb WHERE filename = %s', (filename,))
     conn.commit()
     conn.close()
@@ -176,7 +178,7 @@ class HybridSearch:
     embedding_model = EmbeddingModel()
     embedding = embedding_model.encode(query)
     del embedding_model
-    conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
+    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
     register_vector(conn)
     vector_results = conn.execute(f'SELECT embedding, text, filename FROM vectordb ORDER BY embedding <-> %s LIMIT {k}', (np.array(embedding),)).fetchall()
     docs = [text for (embedding, text, filename) in vector_results]
@@ -220,7 +222,7 @@ class HybridSearch:
 
     
   def load_files(self):
-    conn = psycopg.connect(f"dbname={self.dbname} user={self.user} password={self.password}")
+    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
     results = conn.execute('SELECT filename, SUM(length) FROM vectordb GROUP BY filename').fetchall()
     conn.close()
     filesizes = []

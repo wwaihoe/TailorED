@@ -4,8 +4,8 @@ import re
 from dotenv import load_dotenv
 from LLM import LlamaCPP
 
-#retrieval_name = "retrieval-module"
-retrieval_name = "localhost"
+retrieval_name = "retrieval-module"
+#retrieval_name = "localhost"
 retrieval_port = "8000"
 
 import torch
@@ -37,7 +37,7 @@ class QAChain:
     try:
       retrieval_query = ""
       for message in input_messages:
-        retrieval_query += f"{message["role"]}: {message["content"]}\n\n"
+        retrieval_query += f'{message["role"]}: {message["content"]}\n\n'
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  retrieval_query})
       res_json = res.json()
       retrieved_docs = res_json["docs"]

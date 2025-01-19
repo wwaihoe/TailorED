@@ -1,5 +1,5 @@
 node_modules
-
+vite.config.ts.*
 /.cache
 /build
 .env

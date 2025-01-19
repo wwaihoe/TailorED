@@ -39,13 +39,8 @@ export default function App() {
       </head>
       <body>
         <div className="flex flex-row">
-          <nav className="navbar w-1/6 flex flex-col pt-10 gap-3 bg-zinc-800 font-sans text-white">
-            <div className="size-20 flex flex-row items-center ml-4">
-              <img
-                src="/logo.png"
-                alt="TailorED"
-                className="block w-full object-cover"
-              />
+          <nav className="navbar w-1/6 flex flex-col pt-10 gap-7 bg-zinc-800 font-sans text-white items-center">
+            <div className="flex flex-row">
               <p className="text-3xl font-light text-white">
                 Tailor
               </p>
