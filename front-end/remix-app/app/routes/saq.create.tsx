@@ -1,64 +1,50 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import {
-  Link,
   Form,
-  useActionData,
   useNavigation,
-  useSubmit 
+  useSubmit,
+  Outlet 
 } from "@remix-run/react";
-import type { SAQ } from "../types/types";
+import type { ActionFunctionArgs } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 
 
 const chatModuleURLServer = "http://chat-module:8001";
-const retrievalModuleURLServer = "http://retrieval-module:8002";
 const chatModuleURLClient = "http://localhost:8001";
-const retrievalModuleURLClient = "http://localhost:8002";
 
-type TopicObj = {
-  name: string;
-  route?: string;
+
+export async function action({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();  
+  const topic = formData.get("topic") as string;
+  try {
+      const response = await fetch(`${chatModuleURLServer}/generate_saq/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ topic: topic }),
+      });
+    } catch (error) {
+      console.error(error);
+    }
+    return redirect(`/saq`);
 }
 
-type FileListing = {
-  name: string;
-  size: number;
-}
-
-export default function saq() {
+export default function SAQCreate() {
   const [input, setInput] = useState("");
   const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-
-  const [files, setFiles] = useState<FileListing[]>([]);
-
-  const handleUpload = async(event: any) => {
-    event.preventDefault();
-    const file = event.target.files[0];
-    console.log("Uploaded: " + file.name);
-    const formData = new FormData();
-    formData.append("document", file);
-    try {
-      const response = await fetch(`${retrievalModuleURLClient}/upload/`, {
-        method: "POST",
-        body: formData
-      });
-      if (response.ok) {
-        console.log("File uploaded.");
-      }
-    } catch (error) {
-      console.log("Failed to upload file.");
-      console.error(error)
-    }
-  };
+  
 
   const handleSubmit = (event: any) => {
     event.preventDefault();
     if (formRef.current) {
       const submitFormData = new FormData(formRef.current);
-      submitFormData.append("userID", "ABC123");
       submit(
         submitFormData,
         { method: "post" }
@@ -68,64 +54,43 @@ export default function saq() {
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-yellow-400 to-red-400">
-        <h1 className="text-2xl font-bold m-auto text-gray-100">Create SAQs</h1>
+      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
+        <h1 className="text-2xl font-bold m-auto text-gray-100">Create SAQ</h1>
       </header>
-      <main className="h-[90%] w-[90%] m-5 justify-center flex">
-        <Form method="post" preventScrollReset onSubmit={handleSubmit} ref={formRef} className="flex flex-col justify-center content-center items-center max-w-4xl w-full h-fit">
-          {!isSubmitting? 
-          <div className="flex flex-col gap-5 w-full bg-zinc-700 m-5 border-t border-zinc-500 rounded-lg p-3 h-full">
-            <div className="p-4 w-full h-fit bg-zinc-800 border-t border-zinc-700 rounded-lg mx-auto flex flex-col gap-3">
-              <label htmlFor="document">Upload documents here:</label>
-              <input type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
-              file:mr-2 file:py-2 file:px-3
-              file:rounded-full file:border-0
-              file:text-sm file:font-medium
-              file:bg-red-400 file:text-white
-              hover:file:cursor-pointer hover:file:bg-red-500"
-              onChange={handleUpload}/>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
-              <ul>
-                {files.map((file, index) => (
-                  <li key={index} className="mt-2 text-sm text-grey-500">{file.name} ({file.size} bytes)</li>
-                ))}
-              </ul>
+      <main className="flex h-[90%] w-[90%] justify-center">
+        <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-2xl w-full h-fit">
+          <Outlet />
+          <Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="flex flex-col justify-center content-center items-center h-fit p-3">
+            <div className="flex flex-col gap-5 h-full w-full"> 
+              {!isSubmitting? 
+              <div className="flex flex-col gap-3">
+                <input
+                  disabled={isSubmitting}
+                  type="text"
+                  name="topic"
+                  value={input}
+                  ref={inputRef}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="flex-1 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
+                  placeholder="Type the topic for SAQs..."
+                />
+                <button type="submit"
+                  className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-white"
+                >
+                  Create SAQs
+                </button>
+              </div>
+              :
+              <div className='select-none flex space-x-2 justify-center items-center mt-5'>
+                <span className='sr-only'>Loading...</span>
+                <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]'></div>
+                <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]'></div>
+                <div className='h-5 w-5 bg-white rounded-full animate-bounce'></div>
+              </div>
+              }
             </div>
-            <div className="flex flex-col gap-3">
-              <input
-                type="text"
-                name="query"
-                value={input}
-                ref={inputRef}
-                onChange={(e) => setInput(e.target.value)}
-                className="flex-1 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full max-w-4xl"
-                placeholder="Type the topic for SAQs..."
-              />
-              <button type="submit"
-                className="px-6 py-3 bg-red-400 rounded-md text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400"
-              >
-                Create SAQs
-              </button>
-            </div>
-          </div>
-            :
-          <div>
-            <input
-              disabled
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-red-400 w-full max-w-4xl"
-              placeholder="Type the topic for SAQs..."
-            />
-            <button disabled 
-            className="px-6 py-3 bg-gray-700 rounded-md text-white"
-            >
-              Create MCQs
-            </button>
-          </div>
-          }
-        </Form>        
+          </Form> 
+        </div>      
       </main>
     </div>
   );

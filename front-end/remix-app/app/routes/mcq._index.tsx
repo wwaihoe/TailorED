@@ -73,10 +73,3 @@ export function MCQTopic({ topic, route }: TopicObj) {
     </Link>
   );
 }
-
-const topics = [
-  {name: "Math", route: "/mcq/math"},
-  {name: "Science", route: "/mcq/science"},
-  {name: "History", route: "/mcq/history"},
-  {name: "English", route: "/mcq/english"},
-]

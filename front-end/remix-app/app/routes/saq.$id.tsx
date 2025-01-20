@@ -6,7 +6,7 @@ import {
 } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import type { MCQ } from "../types/types";
+import type { SAQ } from "../types/types";
 
 
 const chatModuleURLServer = "http://chat-module:8001";
@@ -15,14 +15,14 @@ const chatModuleURLClient = "http://localhost:8001";
 const dataModuleURLClient = "http://localhost:8003";
 
 
-type MCQLoadData = {
+type SAQLoadData = {
   topic: string;
-  mcqs: MCQ[];
+  saqs: SAQ[];
 }
 
-type EvaluateMCQResponse = {
-  mcq: MCQ;
-  chosen_option: string;
+type EvaluateSAQResponse = {
+  saq: SAQ;
+  input_answer: string;
   feedback: string;
 }
 
@@ -31,18 +31,18 @@ export async function loader({
   params,
 }: LoaderFunctionArgs) {
   try {
-    const response = await fetch(`${dataModuleURLServer}/retrieve_mcq/${params.id}/`);
+    const response = await fetch(`${dataModuleURLServer}/retrieve_saq/${params.id}/`);
     if (response.ok) {
       const data = await response.json();
       return data;
     }
     else {
-      console.log("Failed to load MCQ data.");
+      console.log("Failed to load SAQ data.");
       return null;
     }
   }
   catch (error) {
-    console.log("Failed to load MCQ data.");
+    console.log("Failed to load SAQ data.");
     console.error(error);
     return null;
   }
@@ -53,19 +53,19 @@ export async function action({
   request,
 }: ActionFunctionArgs) {
   const formData = await request.formData();  
-  const mcqs = formData.get("mcqs") as string;
-  const mcqsJSON = JSON.parse(mcqs);
+  const saqs = formData.get("saqs") as string;
+  const saqsJSON = JSON.parse(saqs);
   const length = formData.get("length") as string;
   const additional_info = formData.get("additional_info") as string;
-  const evaluate_mcqs_request = [];
+  const evaluate_saqs_request = [];
   for (let i = 0; i < parseInt(length); i++) {
-    const mcq = {id: mcqsJSON[i].id, question: mcqsJSON[i].question, option_a: mcqsJSON[i].option_a, option_b: mcqsJSON[i].option_b, option_c: mcqsJSON[i].option_c, option_d: mcqsJSON[i].option_d, correct_option: mcqsJSON[i].correct_option};  
-    const evaluate_mcq_request = {mcq: mcq, chosen_option: formData.get(`mcq-${i}`), additional_info: additional_info === "true"? true : false};
-    evaluate_mcqs_request.push(evaluate_mcq_request);
+    const saq = {id: saqsJSON[i].id, question: saqsJSON[i].question, correct_answer: saqsJSON[i].correct_answer};  
+    const evaluate_saq_request = {saq: saq, input_answer: formData.get(`saq-${i}`), additional_info: additional_info === "true"? true : false};
+    evaluate_saqs_request.push(evaluate_saq_request);
   }
-  const body = {"evaluate_mcqs_request": evaluate_mcqs_request};
+  const body = {"evaluate_saqs_request": evaluate_saqs_request};
   try { 
-    const response = await fetch(`${chatModuleURLServer}/evaluate_mcqs/`, {
+    const response = await fetch(`${chatModuleURLServer}/evaluate_saqs/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -88,19 +88,19 @@ export async function action({
 
 }
 
-export default function MCQ() {
-  const data = useLoaderData<typeof loader>() as MCQLoadData;
+export default function SAQ() {
+  const data = useLoaderData<typeof loader>() as SAQLoadData;
   const params = useParams();
   const formRef = useRef<HTMLFormElement>(null);
-  const fetcher = useFetcher<{ responses: EvaluateMCQResponse[] }>();
+  const fetcher = useFetcher<{ responses: EvaluateSAQResponse[] }>();
   const isSubmitting = fetcher.state === "submitting";
 
   const handleSubmit = (event: any) => {
     event.preventDefault()
     if (formRef.current) {
       const submitFormData = new FormData(formRef.current);
-      submitFormData.append("mcqs", JSON.stringify(data.mcqs));
-      submitFormData.append("length", data.mcqs.length.toString());
+      submitFormData.append("saqs", JSON.stringify(data.saqs));
+      submitFormData.append("length", data.saqs.length.toString());
       fetcher.submit(
         submitFormData,
         { method: "post" }
@@ -114,47 +114,26 @@ export default function MCQ() {
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
 
         <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
-          <h1 className="text-3xl font-bold m-auto text-black">MCQ Practice - {data.topic}</h1>
+          <h1 className="text-3xl font-bold m-auto text-black">SAQ Practice - {data.topic}</h1>
         </header>
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
           <div className="w-screen max-w-5xl h-full">
             <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit}>
-              {data.mcqs.map((question, index) => (
+              {data.saqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
-                    <ul className="list-inside">
-                      <div className="flex flex-row justify-between">
-                        <li key={0}>{(10).toString(36).toUpperCase()}. {question.option_a}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toUpperCase()} required/>
-                      </div>
-                      <div className="flex flex-row justify-between">
-                        <li key={1}>{(11).toString(36).toUpperCase()}. {question.option_b}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toUpperCase()} required/>
-                      </div>
-                      <div className="flex flex-row justify-between">
-                        <li key={2}>{(12).toString(36).toUpperCase()}. {question.option_c}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toUpperCase()} required/>
-                      </div>
-                      <div className="flex flex-row justify-between">
-                        <li key={3}>{(13).toString(36).toUpperCase()}. {question.option_d}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toUpperCase()} required/>
-                      </div>
-                    </ul>
+                    <input type="text" disabled={isSubmitting} name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
                     {fetcher.data? <div className="mt-4 flex flex-col gap-1">
-                      {fetcher.data.responses[index].chosen_option === question.correct_option?
-                      <p className="font-bold text-green-400">
-                        Chosen Option: {fetcher.data.responses[index].chosen_option}
-                      </p>:
                       <div>
-                      <p className="font-bold text-red-400">
-                        Chosen Option: {fetcher.data.responses[index].chosen_option}
-                      </p>
-                      <p className="font-bold">
-                        Correct Option: {question.correct_option}
-                      </p>
-                      </div>}
+                        <p className="">
+                          Your answer: {fetcher.data.responses[index].input_answer}
+                        </p>
+                        <p className="font-bold">
+                          Correct Answer: {question.correct_answer}
+                        </p>
+                      </div>
                       <p>
                         {(fetcher.data.responses as any)[index].feedback}
                       </p>

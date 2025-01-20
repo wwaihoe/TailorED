@@ -66,6 +66,14 @@ class EvaluateMCQRequest(BaseModel):
 class EvaluateMCQsRequest(BaseModel):
   evaluate_mcqs_request: List[EvaluateMCQRequest]
 
+class EvaluateMCQsResponse(BaseModel):
+  mcq: MCQ
+  chosen_option: str
+  feedback: str
+
+class EvaluateMCQsResponses(BaseModel):
+  responses: List[EvaluateMCQsResponse]
+
 class EvaluateSAQRequest(BaseModel):
   saq: SAQ
   input_answer: str
@@ -74,9 +82,17 @@ class EvaluateSAQRequest(BaseModel):
 class EvaluateSAQsRequest(BaseModel):
   evaluate_saqs_request: List[EvaluateSAQRequest]
 
+class EvaluateSAQsResponse(BaseModel):
+  saq: SAQ
+  input_answer: str
+  feedback: str
+
+class EvaluateSAQsResponses(BaseModel):
+  responses: List[EvaluateSAQsResponse]
+
 class SummarizeRequest(BaseModel):
   notes: str
-  topic: str
+  topic: str | None=None
   examples: bool | None=False
   context: bool | None=False
 
@@ -98,7 +114,6 @@ def generate_mcq(topic: Topic):
   question_set_id = str(uuid4())
   try:
     body = {"question_set_id": question_set_id, "topic": topic.topic, "mcqs": mcq_groups}
-    print(body)
     response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_mcq/", json=body)
     if not response.ok:
       print("Error in saving MCQs")
@@ -112,12 +127,20 @@ def generate_mcq(topic: Topic):
 @app.post("/generate_saq/")
 def generate_saq(topic: Topic):
   saq_groups = question_generator_model.generate_saq(topic.topic)
-  return saq_groups
-
-@app.post("/evaluate_mcq/")
-def evaluate_mcq(evaluate_mcq_request: EvaluateMCQRequest):
-  response = answer_evaluator_model.evaluate_mcq(evaluate_mcq_request.mcq, evaluate_mcq_request.chosen_option, evaluate_mcq_request.additional_info)
-  return response
+  if saq_groups is None:
+    return
+  question_set_id = str(uuid4())
+  try:
+    body = {"question_set_id": question_set_id, "topic": topic.topic, "saqs": saq_groups}
+    response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_saq/", json=body)
+    if not response.ok:
+      print("Error in saving SAQs")
+      return 
+  except Exception as e:
+    print("Error in saving SAQs")
+    print(e)
+    return
+  return
 
 @app.post("/evaluate_mcqs/")
 def evaluate_mcqs(evaluate_mcqs_request: EvaluateMCQsRequest):
@@ -128,20 +151,18 @@ def evaluate_mcqs(evaluate_mcqs_request: EvaluateMCQsRequest):
     response["chosen_option"] = evaluate_mcq_request.chosen_option
     response["feedback"] = answer_evaluator_model.evaluate_mcq(evaluate_mcq_request.mcq, evaluate_mcq_request.chosen_option, evaluate_mcq_request.additional_info)
     responses.append(response)
-  return {"responses": responses}
-
-@app.post("/evaluate_saq/")
-def evaluate_saq(evaluate_saq_request: EvaluateSAQRequest):
-  response = answer_evaluator_model.evaluate_saq(evaluate_saq_request.saq, evaluate_saq_request.input_answer, evaluate_saq_request.additional_info)
-  return response
+  return EvaluateMCQsResponses(responses=responses)
 
 @app.post("/evaluate_saqs/")
 def evaluate_saqs(evaluate_saqs_request: EvaluateSAQsRequest):
   responses = []
   for evaluate_saq_request in evaluate_saqs_request.evaluate_saqs_request:
-    response = answer_evaluator_model.evaluate_saq(evaluate_saq_request.saq, evaluate_saq_request.input_answer, evaluate_saq_request.additional_info)
+    response = {}
+    response["saq"] = evaluate_saq_request.saq
+    response["input_answer"] = evaluate_saq_request.input_answer
+    response["feedback"] = answer_evaluator_model.evaluate_saq(evaluate_saq_request.saq, evaluate_saq_request.input_answer, evaluate_saq_request.additional_info)
     responses.append(response)  
-  return responses
+  return EvaluateSAQsResponses(responses=responses)
 
 @app.post("/summarize/")
 def summarize(summarize_request: SummarizeRequest):
