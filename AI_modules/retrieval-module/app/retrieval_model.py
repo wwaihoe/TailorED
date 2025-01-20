@@ -1,4 +1,5 @@
 import numpy as np
+import uuid
 import pymupdf
 import bm25s
 import psycopg
@@ -19,14 +20,34 @@ class HybridSearch:
     self.password = password
     self.retriever = bm25s.BM25()
     # Setup postgres
-    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
-    conn.execute('CREATE EXTENSION IF NOT EXISTS vector')
-    register_vector(conn)
-    conn.commit()
-    conn.execute(f'CREATE TABLE IF NOT EXISTS vectordb (id serial PRIMARY KEY, embedding vector({self.embedding_dim}), filename text, text text, length integer)')
-    conn.commit()
-    conn.close()
-    self.corpus_dict = corpus_dict # Dictonary of documents with filename as key and texts as value
+    self.conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
+    self.conn.execute('CREATE EXTENSION IF NOT EXISTS vector')
+    register_vector(self.conn)
+    self.conn.commit()
+    self.conn.execute(f'CREATE TABLE IF NOT EXISTS vectordb (id SERIAL PRIMARY KEY, file_id text, embedding vector({self.embedding_dim}), filename text, text text, length integer)')
+    self.conn.commit()
+    self.corpus_dict = corpus_dict # Dictonary of documents with id as key and texts as value
+    # Add to corpus_dict
+    length = self.conn.execute('SELECT COUNT(*) FROM vectordb').fetchone()[0]
+    if length > 0:
+      results = self.conn.execute('SELECT file_id, text FROM vectordb').fetchall()
+      for file_id, text in results:
+        if file_id not in self.corpus_dict:
+          self.corpus_dict[file_id] = []
+        self.corpus_dict[file_id].append(text)
+    try:
+      # Add documents to BM25 model
+      # Tokenize the corpus and only keep the ids (faster and saves memory)
+      full_corpus = []
+      for texts in self.corpus_dict.values():
+        full_corpus += texts
+      corpus_tokens = bm25s.tokenize(full_corpus, stopwords="en")
+      # Index the corpus
+      self.retriever.index(corpus_tokens)
+    except Exception as e:
+      print("Error in adding documents to BM25 model")
+      print(e)
+      raise
 
 
   def clear_database(self):
@@ -46,8 +67,11 @@ class HybridSearch:
     
 
   def add_documents(self, filename: str, corpus: list):
+    # Create a unique id for the file
+    file_id = str(uuid.uuid4())
+
     # Add documents to the corpus dict
-    self.corpus_dict[filename] = corpus
+    self.corpus_dict[file_id] = corpus
 
     try:
       # Add documents to BM25 model
@@ -65,19 +89,14 @@ class HybridSearch:
 
     try:
       # Add documents to the vector database
-      conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
-      # Remove existing documents with the same filename
-      conn.execute('DELETE FROM vectordb WHERE filename = %s', (filename,))
       # Embed the corpus
       embedding_model = EmbeddingModel()
       embeddings = embedding_model.encode(corpus)
       del embedding_model
-      register_vector(conn)
       for text, embedding in zip(corpus, embeddings):
         length = len(text)
-        conn.execute('INSERT INTO vectordb (embedding, filename, text, length) VALUES (%s, %s, %s, %s)', (np.array(embedding), filename, text, length))
-      conn.commit()
-      conn.close()
+        self.conn.execute('INSERT INTO vectordb (file_id, embedding, filename, text, length) VALUES (%s, %s, %s, %s, %s)', (file_id, np.array(embedding), filename, text, length))
+      self.conn.commit()
     except Exception as e:
       print("Error in adding documents to vector database")
       print(e)
@@ -130,23 +149,24 @@ class HybridSearch:
     return
     
 
-  def remove_documents(self, filename: str):
+  def remove_documents(self, file_id: str):
     # Remove documents from BM25 model
     # Remove from corpus
-    del self.corpus_dict[filename]
-    # Tokenize the corpus and only keep the ids (faster and saves memory)
-    full_corpus = []
-    for texts in self.corpus_dict.values():
-      full_corpus += texts
-    corpus_tokens = bm25s.tokenize(full_corpus, stopwords="en")
-    # Index the corpus
-    self.retriever.index(corpus_tokens)
+    del self.corpus_dict[file_id]
+    if len(self.corpus_dict) == 0:
+      self.retriever = bm25s.BM25()
+    else:
+      # Tokenize the corpus and only keep the ids (faster and saves memory)
+      full_corpus = []
+      for texts in self.corpus_dict.values():
+        full_corpus += texts
+      corpus_tokens = bm25s.tokenize(full_corpus, stopwords="en")
+      # Index the corpus
+      self.retriever.index(corpus_tokens)
 
     # Remove documents from the vector database
-    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
-    conn.execute('DELETE FROM vectordb WHERE filename = %s', (filename,))
-    conn.commit()
-    conn.close()
+    self.conn.execute('DELETE FROM vectordb WHERE file_id = %s', (file_id,))
+    self.conn.commit()
     return
 
 
@@ -166,8 +186,11 @@ class HybridSearch:
     for i in range(bm25_results.shape[1]):
         doc = bm25_results[0, i]
         docs.append(doc)
-        for filename, texts in self.corpus_dict.items():
+        for file_id, texts in self.corpus_dict.items():
           if doc in texts:
+            # Get the filename
+            filename_result = self.conn.execute('SELECT filename FROM vectordb WHERE file_id = %s', (file_id,)).fetchone()
+            filename = filename_result[0]
             filenames.add(filename)
             break
     return docs, filenames
@@ -178,12 +201,9 @@ class HybridSearch:
     embedding_model = EmbeddingModel()
     embedding = embedding_model.encode(query)
     del embedding_model
-    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
-    register_vector(conn)
-    vector_results = conn.execute(f'SELECT embedding, text, filename FROM vectordb ORDER BY embedding <-> %s LIMIT {k}', (np.array(embedding),)).fetchall()
+    vector_results = self.conn.execute(f'SELECT embedding, text, filename FROM vectordb ORDER BY embedding <-> %s LIMIT {k}', (np.array(embedding),)).fetchall()
     docs = [text for (embedding, text, filename) in vector_results]
     filenames = set([filename for (embedding, text, filename) in vector_results])
-    conn.close()
     return docs, filenames
 
 
@@ -222,12 +242,10 @@ class HybridSearch:
 
     
   def load_files(self):
-    conn = psycopg.connect(f"host={self.host} port={self.port} dbname={self.dbname} user={self.user} password={self.password}")
-    results = conn.execute('SELECT filename, SUM(length) FROM vectordb GROUP BY filename').fetchall()
-    conn.close()
+    results = self.conn.execute('SELECT file_id, filename, SUM(length) FROM vectordb GROUP BY file_id, filename').fetchall()
     filesizes = []
-    for filename, filesize in results:
-      filesizes.append({"name": filename, "size": filesize})
+    for file_id, filename, filesize in results:
+      filesizes.append({"id": file_id, "name": filename, "size": filesize})
     return filesizes
 
 

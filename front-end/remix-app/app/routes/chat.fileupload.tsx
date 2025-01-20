@@ -7,6 +7,7 @@ const retrievalModuleURLServer = "http://retrieval-module:8000";
 const retrievalModuleURLClient = "http://localhost:8000";
 
 type FileListing = {
+  id: string;
   name: string;
   size: number;
 }
@@ -18,7 +19,7 @@ export async function loader() {
       const data = await response.json();
       const filesizes = data.filesizes
       const files = filesizes.map((file: any) => {
-        return { name: file.name, size: file.size };
+        return { id: file.id, name: file.name, size: file.size };
       });
       const filenames = files.map((file: any) => file.name);
       console.log("Files loaded: " + filenames);
@@ -39,9 +40,10 @@ export async function action({
   request,
 }: ActionFunctionArgs) {
   const formData = await request.formData();
+  const file_id = formData.get("file_id");
   const filename = formData.get("filename");
   try {
-    const response = await fetch(`${retrievalModuleURLServer}/remove/${filename}/`, {
+    const response = await fetch(`${retrievalModuleURLServer}/remove/${file_id}/`, {
       method: "DELETE",
     });
     if (response.ok) {
@@ -114,24 +116,25 @@ export default function fileUpload() {
       <ul>
         {files && files.map((file, index) => (
           <li key={index} className="mt-2 text-sm text-grey-500">
-          <div className="flex flex-row gap-1 border-2 border-zinc-400 rounded-xl justify-between">
-            <div className="flex flex-row justify-between ml-1 w-5/6">
-              <p>{file.name}</p>
-              <p>{file.size} Chars</p>
-            </div>
-            <fetcher.Form method="post" className="flex w-1/6 justify-end">
-              <input type="hidden" name="filename" value={file.name}/>
-              {isRemoving ?
-              <div className="flex justify-center items-center">
-                <div className="rounded-full h-5 w-5 bg-white animate-ping"></div>
+            <div className="flex flex-row gap-3 pl-1 border-2 border-zinc-400 rounded-xl justify-between">
+              <div className="flex flex-row justify-between w-full">
+                <p>{file.name}</p>
+                <p>{file.size} Chars</p>
               </div>
-              : 
-              <button type="submit" className="flex text-center select-none pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">
-                x
-              </button>
-              }
-            </fetcher.Form>
-          </div>
+              <fetcher.Form method="post" className="flex w-1/8 justify-end">
+                <input type="hidden" name="file_id" value={file.id}/>
+                <input type="hidden" name="filename" value={file.name}/>
+                {isRemoving ?
+                <div className="flex justify-center items-center">
+                  <div className="rounded-full h-5 w-5 bg-white animate-ping"></div>
+                </div>
+                : 
+                <button type="submit" className="flex text-center h-fit select-none pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">
+                  x
+                </button>
+                }
+              </fetcher.Form>
+            </div>
           </li>
         ))}
       </ul>

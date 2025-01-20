@@ -19,6 +19,11 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
+class FileSize(BaseModel):
+  id: str
+  name: str
+  size: int
+
 class FileList(BaseModel):
   filesizes: list
 
@@ -61,10 +66,10 @@ async def upload_document(file: UploadFile):
     raise HTTPException(status_code=404, detail="Only PDF/JPG/PNG/MP3 files are accepted!")
   return 
 
-@app.delete("/remove/{filename}/")
-def remove_document(filename: str):
-  hybrid_search.remove_documents(filename)
-  print("Removed: ", filename)
+@app.delete("/remove/{file_id}/")
+def remove_document(file_id: str):
+  hybrid_search.remove_documents(file_id)
+  print("Removed: ", file_id)
   return
 
 @app.post("/retrieve/")
