@@ -26,6 +26,9 @@ export async function action({
         },
         body: JSON.stringify({ topic: topic }),
       });
+      if (!response.ok) {
+        alert("Failed to create MCQs");
+      }
     } catch (error) {
       console.error(error);
     }

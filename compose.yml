@@ -7,6 +7,7 @@ services:
     build: #build docker image using Dockerfile in front-end directory
       context: ./front-end
       target: production
+    container_name: front-end
     environment: #set NODE_ENV environment variable
       NODE_ENV: production
     networks: #connect service to bridgenetwork
@@ -23,6 +24,7 @@ services:
     build: #build docker image using Dockerfile in front-end directory
       context: ./front-end
       target: development
+    container_name: front-end-dev
     environment: #set NODE_ENV environment variable
       NODE_ENV: development
     volumes:
@@ -41,12 +43,11 @@ services:
   chat-module: #chat-module
     build: #build docker image using Dockerfile in chat-module directory
       context: ./AI_modules/chat-module
+    container_name: chat-module
     networks: #connect service to bridgenetwork
       - bridgenetwork
     ports: #map host port 8001 to port 8001 of chat-module service
       - 8001:8001
-    depends_on: #starts service after retrieval-module
-      - retrieval-module
     environment:
       - MODEL_NAME=${MODEL_NAME}
     deploy:
@@ -60,6 +61,7 @@ services:
   retrieval-module: #retrieval-module
     build: #build docker image using Dockerfile in retrieval-module directory
       context: ./AI_modules/retrieval-module
+    container_name: retrieval-module
     networks: #connect service to bridgenetwork
       - bridgenetwork
     ports: #map host port 8002 to port 8002 of retrieval-module service
@@ -79,6 +81,7 @@ services:
   data-module: #data-module
     build: #build docker image using Dockerfile in data-module directory
       context: ./data-module
+    container_name: data-module
     networks: #connect service to bridgenetwork
       - bridgenetwork
     ports: #map host port 8003 to port 8003 of data-module service
@@ -89,6 +92,7 @@ services:
 
   db: #database
     image: pgvector/pgvector:pg17
+    container_name: db
     networks:
       - bridgenetwork
     environment:
@@ -105,5 +109,76 @@ services:
       timeout: 5s
       retries: 5
 
+  llamacpp: #llamacpp server
+    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+    container_name: llamacpp
+    volumes:
+      - ./AI_modules/chat-module/models:/models
+    ports:
+      - 8002:8002
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - bridgenetwork
+    environment:
+      LLAMA_ARG_MODEL: /models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+      LLAMA_ARG_CTX_SIZE: 5192
+      LLAMA_ARG_N_PREDICT: 5192
+      LLAMA_ARG_FLASH_ATTN: 1
+      LLAMA_ARG_N_GPU_LAYERS: 99
+      LLAMA_ARG_ENDPOINT_METRICS: 1
+      LLAMA_ARG_PORT: 8002
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
+    restart: unless-stopped
+    profiles:
+      - llamacpp
+
+  ollama: #ollama
+    image: ollama/ollama:latest
+    pull_policy: always
+    container_name: ollama
+    networks:
+      - bridgenetwork
+    ports:
+      - 11434:11434
+    depends_on: #starts service after retrieval-module
+      - retrieval-module
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    volumes:
+      - ./ollama:/root/.ollama
+      - ./ollama_entrypoint.sh:/ollama_entrypoint.sh
+    environment:
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_MODEL=deepseek-r1:7b
+      - OLLAMA_MODELS=/root/.ollama/models
+    healthcheck:
+      test: ollama list || exit 1
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+    entrypoint: ["/usr/bin/bash", "/ollama_entrypoint.sh"]
+    profiles:
+      - ollama
+
 volumes:
   postgres-data:
+  #ollama:

@@ -35,19 +35,19 @@ class HybridSearch:
         if file_id not in self.corpus_dict:
           self.corpus_dict[file_id] = []
         self.corpus_dict[file_id].append(text)
-    try:
-      # Add documents to BM25 model
-      # Tokenize the corpus and only keep the ids (faster and saves memory)
-      full_corpus = []
-      for texts in self.corpus_dict.values():
-        full_corpus += texts
-      corpus_tokens = bm25s.tokenize(full_corpus, stopwords="en")
-      # Index the corpus
-      self.retriever.index(corpus_tokens)
-    except Exception as e:
-      print("Error in adding documents to BM25 model")
-      print(e)
-      raise
+      try:
+        # Add documents to BM25 model
+        # Tokenize the corpus and only keep the ids (faster and saves memory)
+        full_corpus = []
+        for texts in self.corpus_dict.values():
+          full_corpus += texts
+        corpus_tokens = bm25s.tokenize(full_corpus, stopwords="en")
+        # Index the corpus
+        self.retriever.index(corpus_tokens)
+      except Exception as e:
+        print("Error in adding documents to BM25 model")
+        print(e)
+        raise
 
 
   def clear_database(self):

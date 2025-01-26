@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   useLoaderData,
   useParams,
@@ -7,6 +7,7 @@ import {
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import type { MCQ } from "../types/types";
+import { c } from "vite/dist/node/types.d-aGj9QkWt";
 
 
 const chatModuleURLServer = "http://chat-module:8001";
@@ -15,9 +16,16 @@ const chatModuleURLClient = "http://localhost:8001";
 const dataModuleURLClient = "http://localhost:8003";
 
 
+type MCQFeedback = {
+  question_id: number;
+  chosen_option: string;
+  feedback: string;
+}
+
 type MCQLoadData = {
   topic: string;
   mcqs: MCQ[];
+  feedbacks: MCQFeedback[];
 }
 
 type EvaluateMCQResponse = {
@@ -34,6 +42,7 @@ export async function loader({
     const response = await fetch(`${dataModuleURLServer}/retrieve_mcq/${params.id}/`);
     if (response.ok) {
       const data = await response.json();
+      console.log("Retrieved MCQ data: ", data);
       return data;
     }
     else {
@@ -50,6 +59,7 @@ export async function loader({
 
 
 export async function action({
+  params,
   request,
 }: ActionFunctionArgs) {
   const formData = await request.formData();  
@@ -63,7 +73,11 @@ export async function action({
     const evaluate_mcq_request = {mcq: mcq, chosen_option: formData.get(`mcq-${i}`), additional_info: additional_info === "true"? true : false};
     evaluate_mcqs_request.push(evaluate_mcq_request);
   }
-  const body = {"evaluate_mcqs_request": evaluate_mcqs_request};
+  const body = {
+    "question_set_id": params.id,
+    "evaluate_mcqs_request": evaluate_mcqs_request
+  };
+  console.log(evaluate_mcqs_request);
   try { 
     const response = await fetch(`${chatModuleURLServer}/evaluate_mcqs/`, {
       method: "POST",
@@ -95,6 +109,8 @@ export default function MCQ() {
   const fetcher = useFetcher<{ responses: EvaluateMCQResponse[] }>();
   const isSubmitting = fetcher.state === "submitting";
 
+  const [showFeedback, setShowFeedback] = useState<Boolean>(false);
+
   const handleSubmit = (event: any) => {
     event.preventDefault()
     if (formRef.current) {
@@ -119,6 +135,59 @@ export default function MCQ() {
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
           <div className="w-screen max-w-5xl h-full">
+            {data.feedbacks && 
+            <div className="flex justify-center mb-4">
+              <button onClick = {() => setShowFeedback(!showFeedback)} className="p-2 bg-blue-400 text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400 rounded-lg text-md">
+                {showFeedback? "Hide Feedback" : "Show Previously Submitted Response"}
+              </button>
+            </div>}
+            {showFeedback?
+            <div>
+              {data.mcqs.map((question, index) => (
+                <div key={index} className="mb-4 flex justify-center">
+                  <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
+                    {question.question}
+                    <ul className="list-inside">
+                      <div className="flex flex-row justify-between">
+                        <li key={0}>{(10).toString(36).toLowerCase()}. {question.option_a}</li>
+                        <input disabled type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toLowerCase()}/>
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <li key={1}>{(11).toString(36).toLowerCase()}. {question.option_b}</li>
+                        <input disabled type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toLowerCase()}/>
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <li key={2}>{(12).toString(36).toLowerCase()}. {question.option_c}</li>
+                        <input disabled type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toLowerCase()}/>
+                      </div>
+                      <div className="flex flex-row justify-between">
+                        <li key={3}>{(13).toString(36).toLowerCase()}. {question.option_d}</li>
+                        <input disabled type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()}/>
+                      </div>
+                    </ul>
+                    {data.feedbacks? <div className="mt-4 flex flex-col gap-1">
+                      {data.feedbacks[index].chosen_option === question.correct_option?
+                      <p className="font-bold text-green-400">
+                        Chosen Option: {data.feedbacks[index].chosen_option}
+                      </p>:
+                      <div>
+                      <p className="font-bold text-red-400">
+                        Chosen Option: {data.feedbacks[index].chosen_option}
+                      </p>
+                      <p className="font-bold">
+                        Correct Option: {question.correct_option}
+                      </p>
+                      </div>}
+                      <p>
+                        {data.feedbacks[index].feedback}
+                      </p>
+                    </div>: 
+                    null}
+                  </div>
+                </div>
+              ))}
+            </div>
+            :
             <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit}>
               {data.mcqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
@@ -126,20 +195,20 @@ export default function MCQ() {
                     {question.question}
                     <ul className="list-inside">
                       <div className="flex flex-row justify-between">
-                        <li key={0}>{(10).toString(36).toUpperCase()}. {question.option_a}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toUpperCase()} required/>
+                        <li key={0}>{(10).toString(36).toLowerCase()}. {question.option_a}</li>
+                        <input disabled={isSubmitting} type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toLowerCase()} required/>
                       </div>
                       <div className="flex flex-row justify-between">
-                        <li key={1}>{(11).toString(36).toUpperCase()}. {question.option_b}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toUpperCase()} required/>
+                        <li key={1}>{(11).toString(36).toLowerCase()}. {question.option_b}</li>
+                        <input disabled={isSubmitting} type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toLowerCase()} required/>
                       </div>
                       <div className="flex flex-row justify-between">
-                        <li key={2}>{(12).toString(36).toUpperCase()}. {question.option_c}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toUpperCase()} required/>
+                        <li key={2}>{(12).toString(36).toLowerCase()}. {question.option_c}</li>
+                        <input disabled={isSubmitting} type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toLowerCase()} required/>
                       </div>
                       <div className="flex flex-row justify-between">
-                        <li key={3}>{(13).toString(36).toUpperCase()}. {question.option_d}</li>
-                        <input disabled={isSubmitting} type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toUpperCase()} required/>
+                        <li key={3}>{(13).toString(36).toLowerCase()}. {question.option_d}</li>
+                        <input disabled={isSubmitting} type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()} required/>
                       </div>
                     </ul>
                     {fetcher.data? <div className="mt-4 flex flex-col gap-1">
@@ -180,6 +249,7 @@ export default function MCQ() {
                 </span>
               </div>}
             </fetcher.Form>
+            }
           </div>
         </main>
     </div>

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List, Optional
 import psycopg
 
 
@@ -33,34 +34,68 @@ class MCQ(BaseModel):
   option_d: str
   correct_option: str
 
+class MCQWithID(BaseModel):
+  id: int
+  question: str
+  option_a: str
+  option_b: str
+  option_c: str
+  option_d: str
+  correct_option: str
+
 class SAQ(BaseModel):
+  question: str
+  correct_answer: str
+
+class SAQWithID(BaseModel):
+  id: int
   question: str
   correct_answer: str
 
 class SaveMCQRequest(BaseModel):
   question_set_id: str
   topic: str
-  mcqs: list[MCQ]
+  mcqs: List[MCQ]
 
 class SaveSAQRequest(BaseModel):
   question_set_id: str
   topic: str
-  saqs: list[SAQ]
+  saqs: List[SAQ]
 
 class Topic(BaseModel):
   question_set_id: str
   topic: str
 
 class RetrieveTopicsResponse(BaseModel):
-  topics: list[Topic]
+  topics: List[Topic]
+
+class MCQFeedback(BaseModel):
+  question_set_id: str
+  question_id: int
+  chosen_option: str
+  feedback: str
 
 class RetrieveMCQResponse(BaseModel):
   topic: str
-  mcqs: list[MCQ]
+  mcqs: List[MCQWithID]
+  feedbacks: Optional[List[MCQFeedback]] = None
+
+class SAQFeedback(BaseModel):
+  question_set_id: str
+  question_id: int
+  input_answer: str
+  feedback: str
 
 class RetrieveSAQResponse(BaseModel):
   topic: str
-  saqs: list[SAQ]
+  saqs: List[SAQWithID]
+  feedbacks: Optional[List[SAQFeedback]] = None
+
+class SaveMCQFeedbacksRequest(BaseModel):
+  mcq_feedbacks: List[MCQFeedback]
+
+class SaveSAQFeedbacksRequest(BaseModel):
+  saq_feedbacks: List[SAQFeedback]
 
 
 # Create MCQ table
@@ -70,6 +105,15 @@ conn.commit()
 # Create SAQ table
 conn.execute('CREATE TABLE IF NOT EXISTS saq (id serial PRIMARY KEY, question_set_id text, topic text, question text, correct_answer text)')
 conn.commit()
+
+# Create MCQ Feedback table
+conn.execute('CREATE TABLE IF NOT EXISTS mcq_feedback (id serial PRIMARY KEY, question_set_id text, question_id int REFERENCES mcq(id), chosen_option text, feedback text)')
+conn.commit()
+
+# Create SAQ Feedback table
+conn.execute('CREATE TABLE IF NOT EXISTS saq_feedback (id serial PRIMARY KEY, question_set_id text, question_id int REFERENCES saq(id), input_answer text, feedback text)')
+conn.commit()
+
 
 @app.post("/save_mcq/")
 def mcq(save_mcq_request: SaveMCQRequest):
@@ -139,7 +183,11 @@ def retrieve_mcq(question_set_id: str):
     mcqs = []
     for id, question, option_a, option_b, option_c, option_d, correct_option in results:
       mcqs.append({"id": id, "question": question, "option_a": option_a, "option_b": option_b, "option_c": option_c, "option_d": option_d, "correct_option": correct_option})
-    return RetrieveMCQResponse(topic=topic, mcqs=mcqs)
+    results = conn.execute('SELECT question_id, chosen_option, feedback FROM mcq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    mcq_feedbacks = []
+    for question_id, chosen_option, feedback in results:
+      mcq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "chosen_option": chosen_option, "feedback": feedback})
+    return RetrieveMCQResponse(topic=topic, mcqs=mcqs, feedbacks=mcq_feedbacks if len(mcq_feedbacks) > 0 else None)
 
   except Exception as e:
     print("Error in retrieving MCQs")
@@ -156,7 +204,11 @@ def retrieve_saq(question_set_id: str):
     saqs = []
     for id, question, correct_answer in results:
       saqs.append({"id": id, "question": question, "correct_answer": correct_answer})
-    return RetrieveSAQResponse(topic=topic, saqs=saqs)
+    results = conn.execute('SELECT question_id, input_answer, feedback FROM saq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    saq_feedbacks = []
+    for question_id, input_answer, feedback in results:
+      saq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "input_answer": input_answer, "feedback": feedback})
+    return RetrieveSAQResponse(topic=topic, saqs=saqs, feedbacks=saq_feedbacks if len(saq_feedbacks) > 0 else None)
 
   except Exception as e:
     print("Error in retrieving SAQs")
@@ -188,6 +240,45 @@ def delete_saq(question_set_id: int):
     print("Error in deleting SAQs")
     print(e)
     return
+
+@app.post("/save_mcq_feedbacks/")
+def save_mcq_feedbacks(save_mcq_feedbacks_request: SaveMCQFeedbacksRequest):
+  try:
+    # Delete any existing MCQ feedbacks
+    print("Deleting existing MCQ feedbacks")
+    conn.execute('DELETE FROM mcq_feedback WHERE question_set_id = %s', (save_mcq_feedbacks_request.mcq_feedbacks[0].question_set_id,))
+    conn.commit()
+    # Insert MCQ feedback data
+    print("Inserting MCQ feedbacks")
+    for mcq_feedback in save_mcq_feedbacks_request.mcq_feedbacks:
+      conn.execute(f'INSERT INTO mcq_feedback (question_set_id, question_id, chosen_option, feedback) VALUES (%s, %s, %s, %s)', (mcq_feedback.question_set_id, mcq_feedback.question_id, mcq_feedback.chosen_option, mcq_feedback.feedback))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in saving MCQ feedbacks")
+    print(e)
+    return
+
+@app.post("/save_saq_feedbacks/")
+def save_saq_feedbacks(save_saq_feedbacks_request: SaveSAQFeedbacksRequest):
+  try:
+    # Delete any existing SAQ feedbacks
+    print("Deleting existing SAQ feedbacks")
+    conn.execute('DELETE FROM saq_feedback WHERE question_set_id = %s', (save_saq_feedbacks_request.saq_feedbacks[0].question_set_id,))
+    conn.commit()
+    # Insert SAQ feedback data
+    print("Inserting SAQ feedbacks")
+    for saq_feedback in save_saq_feedbacks_request.saq_feedbacks:
+      conn.execute(f'INSERT INTO saq_feedback (question_set_id, question_id, input_answer, feedback) VALUES (%s, %s, %s, %s)', (saq_feedback.question_set_id, saq_feedback.question_id, saq_feedback.input_answer, saq_feedback.feedback))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in saving SAQ feedbacks")
+    print(e)
+    return
+
 
   
 if __name__ == '__main__':

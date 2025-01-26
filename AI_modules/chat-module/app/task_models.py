@@ -2,7 +2,8 @@ import os
 import requests
 import re
 from dotenv import load_dotenv
-from LLM import LlamaCPP
+from LLM import LlamaCPPPython
+
 
 retrieval_name = "retrieval-module"
 #retrieval_name = "localhost"
@@ -62,12 +63,12 @@ MCQ Questions: """
         
         # Add the question, options, and answer to the mcq_pairs list
         mcq_groups.append({
-          "question": question.strip(),
-          "option_a": options_list[0],
-          "option_b": options_list[1],
-          "option_c": options_list[2],
-          "option_d": options_list[3],
-          "correct_option": answer.strip()
+          "question": question.strip().strip("{}"),
+          "option_a": options_list[0].strip("{}"),
+          "option_b": options_list[1].strip("{}"),
+          "option_c": options_list[2].strip("{}"),
+          "option_d": options_list[3].strip("{}"),
+          "correct_option": answer.strip().strip("{}").lower()
         })
     except Exception as e:
       print("Error in parsing MCQs")
@@ -117,8 +118,8 @@ SAQ Questions: """
       for question, answer in qa_matches:
         # Add the question and answer to the qa_pairs list
         qa_pairs.append({
-          "question": question.strip(),
-          "correct_answer": answer.strip()
+          "question": question.strip().strip("{}"),
+          "correct_answer": answer.strip().strip("{}")
         })
     except Exception as e:
       print("Error in parsing SAQs")
@@ -137,8 +138,8 @@ class AnswerEvaluator:
     try:
       evaluatemcq_system_prompt = "You are an expert in the subject, evaluate the answer to a given question."
       additional_info_prompt = "Also offer additional information or clarifications in helping to understand the topic."
-      evaluatemcq_prompt_template = f"""Evaluate the chosen_option for a multiple choice question. Read the question, correct_option and chosen_option carefully. \
-Then, provide constructive feedback if the chosen_option is incorrect. Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. \
+      evaluatemcq_prompt_template = f"""Evaluate the chosen option for a multiple choice question. Read the question, correct option and chosen option carefully. \
+Then, provide constructive feedback if the chosen option is incorrect. Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. \
 Otherwise, provide positive feedback. \
 {additional_info_prompt if additional_info else ""} \
 Give your answer in full sentences. 
@@ -165,7 +166,7 @@ Give your answer in full sentences.
     try:
       evaluatesaq_system_prompt = "You are an expert in the subject, evaluate the answer to a given question."
       additional_info_prompt = "Also offer additional information or clarifications in helping to understand the topic."
-      evaluatesaq_prompt_template = f"""Evaluate the input_answer for a short answer question. Read the question, correct_answer and input_answer carefully. \
+      evaluatesaq_prompt_template = f"""Evaluate the input_answer for a short answer question. Read the question, correct answer and input answer carefully. \
 Then, provide constructive feedback on how well the answer answers the question. \
 Your feedback should highlight any correct points made and point out inaccuracies or areas of understanding which may need improvement.{additional_info_prompt if additional_info else ""}:
 Give your answer in full sentences. Do not mention the model answer in your feedback.
@@ -215,7 +216,9 @@ Notes: {notes}"""
 
 # Load LLM with default settings
 model_name = os.environ['MODEL_NAME']
-llm = LlamaCPP(model_path=f"../models/{model_name}")
+#llm = LlamaCPP()
+llm = LlamaCPPPython(model_path=f"../models/{model_name}")
+#llm = Ollama(model_name=model_name)
 
 question_generator_model = QuestionGenerator(f"http://{retrieval_name}:{retrieval_port}", llm)
 answer_evaluator_model = AnswerEvaluator(f"http://{retrieval_name}:{retrieval_port}", llm)

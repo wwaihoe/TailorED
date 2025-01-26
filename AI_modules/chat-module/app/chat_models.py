@@ -2,20 +2,12 @@ import os
 import requests
 import re
 from dotenv import load_dotenv
-from LLM import LlamaCPP
+from LLM import LlamaCPPPython
+
 
 retrieval_name = "retrieval-module"
 #retrieval_name = "localhost"
 retrieval_port = "8000"
-
-import torch
-#Use GPU if available
-if torch.cuda.is_available():
-  device = 'cuda'
-else:
-  device = 'cpu'
-
-load_dotenv()
 
 
 class QAChain:
@@ -73,6 +65,8 @@ If the you do not have sufficient knowledge to answer the question, say "Sorry, 
 
 # Load LLM with default settings
 model_name = os.environ['MODEL_NAME']
-llm = LlamaCPP(model_path=f"../models/{model_name}")
+#llm = LlamaCPP()
+llm = LlamaCPPPython(model_path=f"../models/{model_name}")
+#llm = Ollama(model_name=model_name)
 
 qa_chain_model = QAChain(f"http://{retrieval_name}:{retrieval_port}", llm)

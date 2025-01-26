@@ -5,7 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  LiveReload
+  MetaFunction,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 
@@ -23,6 +23,12 @@ export const links: LinksFunction = () => [
     href: styles,
   },
 ];
+
+export const meta: MetaFunction = () => {
+  return [
+    { name: "TailorED", content: "Personalised Education with AI" },
+  ]
+};
 
 
 export default function App() {

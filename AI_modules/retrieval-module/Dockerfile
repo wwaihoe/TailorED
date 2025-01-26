@@ -1,5 +1,5 @@
 # Use an official NVIDIA CUDA base image
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 EXPOSE 8000
 
