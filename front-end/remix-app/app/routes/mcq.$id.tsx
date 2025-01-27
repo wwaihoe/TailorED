@@ -77,7 +77,7 @@ export async function action({
     "question_set_id": params.id,
     "evaluate_mcqs_request": evaluate_mcqs_request
   };
-  console.log(evaluate_mcqs_request);
+  console.log(body);
   try { 
     const response = await fetch(`${chatModuleURLServer}/evaluate_mcqs/`, {
       method: "POST",

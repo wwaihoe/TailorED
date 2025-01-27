@@ -3,6 +3,7 @@ import requests
 import re
 from dotenv import load_dotenv
 from LLM import LlamaCPPPython
+from enum import Enum
 
 
 retrieval_name = "retrieval-module"
@@ -13,14 +14,21 @@ retrieval_port = "8000"
 load_dotenv()
 
 
+class Difficulty(Enum):
+  easy = 1
+  medium = 2
+  hard = 3
+
+
 class QuestionGenerator:
-  def __init__(self, vectorstore_url, llm):
+  def __init__(self, vectorstore_url: str, llm):
     self.vectorstore_url = vectorstore_url
     self.llm = llm
 
   # MCQ
-  def generate_mcq(self, topic):
+  def generate_mcq(self, topic: str, difficulty: Difficulty):
     try:
+      difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
       res_json = res.json()
       retrieved_docs = res_json["docs"]
@@ -33,7 +41,7 @@ class QuestionGenerator:
       filenames = res_json["filenames"]
       generatemcq_system_prompt = f"""You are an assistant who creates assignment questions in MCQ format with 4 options for each question. 
 Create questions in this format: <question>{{question}}</question>\n<options>\n<option>{{option_a}}</option>\n<option>{{option_b}}</option>\n<option>{{option_c}}</option>\n<option>{{option_d}}</option>\n</options>\n<correct_option>{{correct option from a, b, c or d (return only the alphabet)}}</correct_option>"""
-      generatemcq_prompt_template = f"""Create questions related to this topic: {topic}
+      generatemcq_prompt_template = f"""Create questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
 Refer to the following content:
 
 <content>{context}</content>
@@ -79,8 +87,9 @@ MCQ Questions: """
 
 
   #SAQ
-  def generate_saq(self, topic):
+  def generate_saq(self, topic: str, difficulty: Difficulty):
     try:
+      difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
       res_json = res.json()
       context = res_json["docs"]
@@ -88,7 +97,7 @@ MCQ Questions: """
       filenames = res_json["filenames"]
       generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer format. 
 Create questions in this format: <question>{{question}}</question>\n<correct_answer>{{correct answer}}</correct_answer>"""
-      generatesaq_prompt_template = f"""Create questions related to this topic: {topic}
+      generatesaq_prompt_template = f"""Create questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
 Refer to the following content:
 
 <content>{context}</content>

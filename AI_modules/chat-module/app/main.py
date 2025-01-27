@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
 from typing import List, Optional
+from enum import Enum
 from chat_models import qa_chain_model, llm
 from task_models import question_generator_model, answer_evaluator_model, summarizer
 from uuid import uuid4
@@ -42,8 +43,18 @@ class ChatResponse(BaseModel):
   output: MessageWithReason
   filenames: List[str]
 
-class Topic(BaseModel):
+class Difficulty(Enum):
+  easy = 1
+  medium = 2
+  hard = 3
+
+class GenerateMCQRequest(BaseModel):
   topic: str
+  difficulty: int
+
+class GenerateSAQRequest(BaseModel):
+  topic: str
+  difficulty: int
 
 class MCQ(BaseModel):
   id: int
@@ -55,6 +66,7 @@ class MCQ(BaseModel):
   correct_option: str
 
 class SAQ(BaseModel):
+  id: int
   question: str
   correct_answer: str
 
@@ -109,13 +121,16 @@ def get_response(chat_request: ChatRequest):
   return ChatResponse(output=response["content"], filenames=response["filenames"])
 
 @app.post("/generate_mcq/")
-def generate_mcq(topic: Topic):
-  mcq_groups = question_generator_model.generate_mcq(topic.topic)
+def generate_mcq(generate_mcq_request: GenerateMCQRequest):
+  if generate_mcq_request.difficulty < 1 or generate_mcq_request.difficulty > 3:
+    raise HTTPException(status_code=400, detail="Invalid difficulty level")
+  difficulty = Difficulty(generate_mcq_request.difficulty)
+  mcq_groups = question_generator_model.generate_mcq(generate_mcq_request.topic, difficulty)
   if mcq_groups is None:
     raise HTTPException(status_code=500, detail="Failed to generate MCQs")
   question_set_id = str(uuid4())
   try:
-    body = {"question_set_id": question_set_id, "topic": topic.topic, "mcqs": mcq_groups}
+    body = {"question_set_id": question_set_id, "topic": generate_mcq_request.topic, "mcqs": mcq_groups}
     response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_mcq/", json=body)
     if not response.ok:
       print("Error in saving MCQs")
@@ -127,13 +142,16 @@ def generate_mcq(topic: Topic):
   return
 
 @app.post("/generate_saq/")
-def generate_saq(topic: Topic):
-  saq_groups = question_generator_model.generate_saq(topic.topic)
+def generate_saq(generate_saq_request: GenerateSAQRequest):
+  if generate_saq_request.difficulty < 1 or generate_saq_request.difficulty > 3:
+    raise HTTPException(status_code=400, detail="Invalid difficulty level")
+  difficulty = Difficulty(generate_saq_request.difficulty)
+  saq_groups = question_generator_model.generate_saq(generate_saq_request.topic, difficulty)
   if saq_groups is None:
     raise HTTPException(status_code=500, detail="Failed to generate SAQs")
   question_set_id = str(uuid4())
   try:
-    body = {"question_set_id": question_set_id, "topic": topic.topic, "saqs": saq_groups}
+    body = {"question_set_id": question_set_id, "topic": generate_saq_request.topic, "saqs": saq_groups}
     response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_saq/", json=body)
     if not response.ok:
       print("Error in saving SAQs")

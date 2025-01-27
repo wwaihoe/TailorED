@@ -127,8 +127,8 @@ services:
       - bridgenetwork
     environment:
       LLAMA_ARG_MODEL: /models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
-      LLAMA_ARG_CTX_SIZE: 5192
-      LLAMA_ARG_N_PREDICT: 5192
+      LLAMA_ARG_CTX_SIZE: 4096
+      LLAMA_ARG_N_PREDICT: 4096
       LLAMA_ARG_FLASH_ATTN: 1
       LLAMA_ARG_N_GPU_LAYERS: 99
       LLAMA_ARG_ENDPOINT_METRICS: 1

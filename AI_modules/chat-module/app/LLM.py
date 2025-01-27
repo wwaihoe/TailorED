@@ -6,7 +6,7 @@ class LlamaCPP():
   def __init__(self, server_url: str="http://llamacpp:8002", **kwargs):
     self.server_url = server_url
     defaults = {
-      "n_predict": 5192,
+      "n_predict": 4096,
     }
     defaults.update(kwargs)
     self.args = defaults
@@ -54,12 +54,12 @@ class LlamaCPPPython():
       model_path=self.model_path,
       n_gpu_layers=-1,
       seed=1234,
-      n_ctx=5192,
+      n_ctx=4096,
       flash_attn=True,
     )
 
     defaults = {
-      "max_tokens": 5192,
+      "max_tokens": 4096,
     }
     defaults.update(kwargs)
     self.args = defaults
