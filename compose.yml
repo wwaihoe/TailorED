@@ -50,13 +50,18 @@ services:
       - 8001:8001
     environment:
       - MODEL_NAME=${MODEL_NAME}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - LLAMA_SERVER_URL=http://llama-server:8002
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: 1
+    #          capabilities: [gpu]
+    depends_on:
+      llama-server:
+        condition: service_healthy
+      
 
   retrieval-module: #retrieval-module
     build: #build docker image using Dockerfile in retrieval-module directory
@@ -109,11 +114,18 @@ services:
       timeout: 5s
       retries: 5
 
-  llamacpp: #llamacpp server
+  llama-server: #llamacpp server
     image: ghcr.io/ggerganov/llama.cpp:server-cuda
-    container_name: llamacpp
+    container_name: llama-server
+    environment:
+      LLAMA_ARG_MODEL: /models/Qwen2.5-3B-Instruct-Q6_K.gguf
+      LLAMA_ARG_CTX_SIZE: 4096
+      LLAMA_ARG_N_GPU_LAYERS: 100
+      LLAMA_ARG_PORT: 8002
+      LLAMA_ARG_FLASH_ATTN: 1
+      LLAMA_ARG_ENDPOINT_METRICS: 1
     volumes:
-      - ./AI_modules/chat-module/models:/models
+      - ./llama-server/models:/models
     ports:
       - 8002:8002
     deploy:
@@ -125,24 +137,13 @@ services:
               capabilities: [gpu]
     networks:
       - bridgenetwork
-    environment:
-      LLAMA_ARG_MODEL: /models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
-      LLAMA_ARG_CTX_SIZE: 4096
-      LLAMA_ARG_N_PREDICT: 4096
-      LLAMA_ARG_FLASH_ATTN: 1
-      LLAMA_ARG_N_GPU_LAYERS: 99
-      LLAMA_ARG_ENDPOINT_METRICS: 1
-      LLAMA_ARG_PORT: 8002
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8002/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-      start_interval: 5s
     restart: unless-stopped
-    profiles:
-      - llamacpp
+    healthcheck:
+      test: curl -f http://localhost:8002/health || exit 1
+      interval: 20s
+      timeout: 30s
+      retries: 8
+      start_period: 30s
 
   ollama: #ollama
     image: ollama/ollama:latest

@@ -2,7 +2,7 @@ import os
 import requests
 import re
 from dotenv import load_dotenv
-from LLM import LlamaCPPPython
+from LLM import LlamaCPP
 from enum import Enum
 
 
@@ -199,11 +199,17 @@ class Summarizer:
     self.vectorstore_url = vectorstore_url
     self.llm = llm
 
-  def summarize(self, notes, topic=None, examples=False, context=False):
+  def summarize(self, topic=None, examples=False, context=False):
     try:
+      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
+      res_json = res.json()
+      context = res_json["docs"]
+      context = "None" if context == "" else context
+      filenames = res_json["filenames"]
       summarizer_system_prompt = "You are a highly proficient summarizer tasked with analyzing and condensing information into clear, structured summaries. \
 Your goal is to extract the most important points from the provided lecture notes, ensuring that the key concepts, examples, and conclusions are conveyed in a concise, easy-to-understand manner. \
-Always organize your responses logically, focus on clarity, and maintain brevity while preserving the core meaning of the content."
+Always organize your responses logically, focus on clarity, and maintain brevity while preserving the core meaning of the content. \
+Provide the summary in markdown format."
       summarizer_prompt_template = f"""Please summarize the following lecture notes, focusing on the key areas outlined below:
 
 {f"Focusing on this topic: {topic}:" if topic != None else "Main Topics: Briefly describe the overarching subjects covered in the lecture."}
@@ -212,7 +218,7 @@ Key Concepts: Highlight the most significant theories, definitions, or ideas dis
 Conclusions or Takeaways: Note any final conclusions or major insights provided by the lecturer.
 {"Context: If relevant, indicate how the material relates to previous lectures or broader concepts in the subject area." if context else ""}
 Please ensure the summary is concise but captures all the critical information for an effective review.
-Notes: {notes}"""
+Notes: {context}"""
       messages = [{"role": "system", "content": summarizer_system_prompt}, {"role": "user", "content": summarizer_prompt_template}]
       response = self.llm.chat_generate(messages)
       return response
@@ -225,8 +231,8 @@ Notes: {notes}"""
 
 # Load LLM with default settings
 model_name = os.environ['MODEL_NAME']
-#llm = LlamaCPP()
-llm = LlamaCPPPython(model_path=f"../models/{model_name}")
+llm = LlamaCPP()
+#llm = LlamaCPPPython(model_path=f"../models/{model_name}")
 #llm = Ollama(model_name=model_name)
 
 question_generator_model = QuestionGenerator(f"http://{retrieval_name}:{retrieval_port}", llm)

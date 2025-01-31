@@ -1,41 +1,80 @@
 import { useState, useEffect, useRef } from "react";
 import {
+  useLoaderData,
   Link,
 } from "@remix-run/react";
 
-type SummaryObj = {
-  name: string;
-  route?: string;
+
+const dataModuleURLServer = "http://data-module:8003";
+const dataModuleURLClient = "http://localhost:8003";
+
+
+type Topic = {
+  id: number;
+  topic: string;
 }
 
+type TopicObj = {
+  topic: string;
+  route: string;
+}
+
+export async function loader() {
+  try {
+    const response = await fetch(`${dataModuleURLServer}/retrieve_summary_topics/`);
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Summary topics loaded successfully: ", data.topics);
+      return data.topics;
+    }
+    else {
+      console.error("Failed to load summary topics.");
+      return [];
+    }
+  }
+  catch (error) {
+    console.error("Failed to load summary topics.");
+    console.error(error);
+    return [];
+  }
+}
+
+
 export default function Summarize() {
+  const topics = useLoaderData<typeof loader>() as Topic[];
+  
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-yellow-400 to-red-400">
-        <h1 className="text-2xl font-bold m-auto text-gray-100">Summarize</h1>
+      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+        <h1 className="text-4xl font-extrabold m-auto text-transparent">Summarize</h1>
       </header>
       <main className="flex flex-col justify-center content-center items-center h-[90%] w-[90%] m-5 gap-6">
-        <div className="grid grid-cols-4 gap-4">
-          {summaries.map((summary) => <SummaryTile key={summary.name} name={summary.name} route={summary.route} />)}
+        <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-full w-full p-4">
+          <p className="text-xl font-bold mb-4">
+            Choose a topic to view generated summary
+          </p>
+          <div className="grid grid-cols-3 grid-rows-4 gap-4 w-full h-full">
+            {topics.map((topic) => <SummaryTopic key={topic.id} topic={topic.topic} route={`/summarize/${topic.id}`} />)}
+          </div>
         </div>
-        <Link to={"/summarize/create"} className="px-6 py-3 bg-red-400 rounded-xl border-2 border-zinc-300 text-white hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-400">
-          Summarize Your Notes
+        <Link to={"/summarize/create/fileupload"} className="px-6 py-3 mb-3 bg-blue-400 rounded-xl border-2 border-zinc-300 text-xl text-white hover:bg-blue-500 hover:border-black focus:outline-none focus:ring focus:ring-blue-300">
+          Create Summaries
         </Link>
       </main>
     </div>
   );
 }
 
-export function SummaryTile({ name, route }: SummaryObj) {
+export function SummaryTopic({ topic, route }: TopicObj) {
+  const prompt = `An illustration showing the key concepts of ${topic}`;
   return (
-    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-red-400">
-      <h1>{name}</h1>
+    <Link to={route ? route : "/"} className="relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300 flex flex-col items-center">
+      <img 
+      src={`https://image.pollinations.ai/prompt/${prompt}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
+      alt={topic}
+      className="absolute inset-0 w-full h-full object-cover rounded-xl"
+      />
+      <h1 className="relative z-10 mb-2 bg-black bg-opacity-60 px-2 py-1 rounded font-semibold">{topic}</h1>
     </Link>
   );
 }
-
-const summaries = [
-  {name: "Linear Algebra AY23/24", route: "/summarize/linearalgebraay2324"},
-  {name: "Quantum Physics", route: "/summarize/quantumphysics"},
-  {name: "Financial Services", route: "/summarize/financialservices"},
-]

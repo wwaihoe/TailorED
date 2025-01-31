@@ -62,12 +62,12 @@ class SaveSAQRequest(BaseModel):
   topic: str
   saqs: List[SAQ]
 
-class Topic(BaseModel):
+class QTopic(BaseModel):
   question_set_id: str
   topic: str
 
-class RetrieveTopicsResponse(BaseModel):
-  topics: List[Topic]
+class RetrieveQTopicsResponse(BaseModel):
+  topics: List[QTopic]
 
 class MCQFeedback(BaseModel):
   question_set_id: str
@@ -97,6 +97,21 @@ class SaveMCQFeedbacksRequest(BaseModel):
 class SaveSAQFeedbacksRequest(BaseModel):
   saq_feedbacks: List[SAQFeedback]
 
+class SaveSummaryRequest(BaseModel):
+  topic: str
+  summary: str
+
+class SummaryTopic(BaseModel):
+  id: int
+  topic: str
+
+class RetrieveSummaryTopicsResponse(BaseModel):
+  topics: List[SummaryTopic]
+
+class RetrieveSummaryResponse(BaseModel):
+  topic: str
+  summary: str
+
 
 # Create MCQ table
 conn.execute('CREATE TABLE IF NOT EXISTS mcq (id serial PRIMARY KEY, question_set_id text, topic text, question text, option_a text, option_b text, option_c text, option_d text, correct_option text)')
@@ -112,6 +127,10 @@ conn.commit()
 
 # Create SAQ Feedback table
 conn.execute('CREATE TABLE IF NOT EXISTS saq_feedback (id serial PRIMARY KEY, question_set_id text, question_id int REFERENCES saq(id), input_answer text, feedback text)')
+conn.commit()
+
+# Create summary table
+conn.execute('CREATE TABLE IF NOT EXISTS summary (id serial PRIMARY KEY, topic text, summary text)')
 conn.commit()
 
 
@@ -151,7 +170,7 @@ def retrieve_mcq_topics():
     topics = []
     for question_set_id, topic in results:
       topics.append({"question_set_id": question_set_id, "topic": topic})
-    return RetrieveTopicsResponse(topics=topics)
+    return RetrieveQTopicsResponse(topics=topics)
 
   except Exception as e:
     print("Error in retrieving MCQ topics")
@@ -166,7 +185,7 @@ def retrieve_saq_topics():
     topics = []
     for question_set_id, topic in results:
       topics.append({"question_set_id": question_set_id, "topic": topic})
-    return RetrieveTopicsResponse(topics=topics)
+    return RetrieveQTopicsResponse(topics=topics)
 
   except Exception as e:
     print("Error in retrieving SAQ topics")
@@ -279,6 +298,45 @@ def save_saq_feedbacks(save_saq_feedbacks_request: SaveSAQFeedbacksRequest):
     print(e)
     return
 
+@app.post("/save_summary/")
+def save_summary(save_summary_request: SaveSummaryRequest):
+  try:
+    # Insert summary data
+    conn.execute(f'INSERT INTO summary (topic, summary) VALUES (%s, %s)', (save_summary_request.topic, save_summary_request.summary))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in saving summary")
+    print(e)
+    return
+  
+@app.get("/retrieve_summary_topics/")
+def retrieve_summary_topics():
+  try:
+    # Retrieve summaries
+    results = conn.execute('SELECT id, topic FROM summary').fetchall()
+    topics = []
+    for id, topic in results:
+      topics.append({"id": id, "topic": topic})
+    return RetrieveSummaryTopicsResponse(topics=topics)
+
+  except Exception as e:
+    print("Error in retrieving summaries")
+    print(e)
+    return
+  
+@app.get("/retrieve_summary/{summary_id}/")
+def retrieve_summary(summary_id: int):
+  try:
+    # Retrieve summary
+    summary = conn.execute('SELECT topic, summary FROM summary WHERE id = %s', (summary_id,)).fetchone()
+    return RetrieveSummaryResponse(topic=summary[0], summary=summary[1])
+
+  except Exception as e:
+    print("Error in retrieving summary")
+    print(e)
+    return
 
   
 if __name__ == '__main__':

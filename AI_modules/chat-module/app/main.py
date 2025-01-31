@@ -105,7 +105,6 @@ class EvaluateSAQsResponses(BaseModel):
   responses: List[EvaluateSAQsResponse]
 
 class SummarizeRequest(BaseModel):
-  notes: str
   topic: Optional[str] = None
   examples: Optional[bool] = False
   context: Optional[bool] = False
@@ -224,8 +223,20 @@ def evaluate_saqs(evaluate_saqs_request: EvaluateSAQsRequest):
 
 @app.post("/summarize/")
 def summarize(summarize_request: SummarizeRequest):
-  response = summarizer.summarize(summarize_request.notes, summarize_request.topic, summarize_request.examples, summarize_request.context)
-  return response
+  response = summarizer.summarize(summarize_request.topic, summarize_request.examples, summarize_request.context)
+  if response is None:
+    raise HTTPException(status_code=500, detail="Failed to summarize")
+  try:
+    body = {"topic": summarize_request.topic, "summary": response}
+    response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_summary/", json=body)
+    if not response.ok:
+      print("Error in saving summary")
+      raise HTTPException(status_code=500, detail="Error in saving summary")
+  except Exception as e:
+    print("Error in saving summary")
+    print(e)
+    raise HTTPException(status_code=500, detail="Error in saving summary")
+  return
 
 
 if __name__ == '__main__':

@@ -1,31 +1,53 @@
-from llama_cpp import Llama
+#from llama_cpp import Llama
+import openai
 import requests
+import os
+import dotenv
 
+dotenv.load_dotenv()
+llama_server_url = os.getenv("LLAMA_SERVER_URL")
+model_name = os.getenv("MODEL_NAME")
 
 class LlamaCPP():
-  def __init__(self, server_url: str="http://llamacpp:8002", **kwargs):
+  def __init__(self, server_url: str=llama_server_url, model_name: str=model_name, **kwargs):
     self.server_url = server_url
+    self.model_name = model_name
     defaults = {
-      "n_predict": 4096,
+      "max_tokens": 4096,
     }
     defaults.update(kwargs)
     self.args = defaults
+    self.client = openai.OpenAI(
+      base_url=f"{self.server_url}/v1",
+      api_key = "sk-no-key-required"
+    )
+    # Warm up the model
+    test_response = self.chat_generate([{"role": "assistant", "content": "Hi"}])
+    if test_response:
+      print(f"Model {self.model_name} loaded successfully")
+    else:
+      raise Exception(f"Failed to load model: {self.model_name}")
 
   def generate(self, prompt: str, **kwargs):
     llm_args = self.args
     llm_args.update(kwargs)
     print("Prompt: ", prompt)
     print("Args: ", llm_args)
-    output = requests.post(
-      f"{self.server_url}/completion",
-      json={
-        "prompt": prompt,
-        **llm_args
-      }
+    #output = requests.post(
+    #  f"{self.server_url}/completion",
+    #  json={
+    #    "prompt": prompt,
+    #    **llm_args
+    #  }
+    #)
+    #output = output.json()
+    output = self.client.completions.create(
+      model=self.model_name,
+      prompt=prompt,
+      **llm_args
     )
-    output = output.json()
     print(f"output: {output}")
-    response = output["content"]
+    response = output.choices[0].text
     return response
 
   def chat_generate(self, messages: list, **kwargs):
@@ -33,16 +55,21 @@ class LlamaCPP():
     llm_args.update(kwargs)
     print("Messages: ", messages)
     print("Args: ", llm_args)
-    output = requests.post(
-      f"{self.server_url}/v1/chat/completions",
-      json={
-        "messages": messages,
-        **llm_args
-      }
+    #output = requests.post(
+    #  f"{self.server_url}/v1/chat/completions",
+    #  json={
+    #    "messages": messages,
+    #    **llm_args
+    #  }
+    #)
+    #output = output.json()
+    output = self.client.chat.completions.create(
+      model=self.model_name,
+      messages=messages,
+      **llm_args
     )
-    output = output.json()
     print(f"output: {output}")
-    response = output["choices"][0]["message"]["content"]
+    response = output.choices[0].message.content
     return response
 
 

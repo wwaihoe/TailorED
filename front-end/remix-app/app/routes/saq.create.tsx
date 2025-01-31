@@ -58,8 +58,8 @@ export default function SAQCreate() {
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
-        <h1 className="text-2xl font-bold m-auto text-black">Create SAQ</h1>
+      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+        <h1 className="text-4xl font-extrabold m-auto text-transparent">Create SAQ</h1>
       </header>
       <main className="flex h-[90%] w-[90%] justify-center">
         <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-2xl w-full h-fit">
@@ -78,6 +78,7 @@ export default function SAQCreate() {
                     onChange={(e) => setInput(e.target.value)}
                     className="w-2/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
                     placeholder="Type the topic for SAQs..."
+                    required
                   />
                   <select
                     disabled={isSubmitting}

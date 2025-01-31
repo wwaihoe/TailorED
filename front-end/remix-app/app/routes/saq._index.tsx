@@ -45,15 +45,15 @@ export default function SAQ() {
   
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
-        <h1 className="text-3xl font-bold m-auto text-black">SAQ Practice</h1>
+      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+        <h1 className="text-4xl font-extrabold m-auto text-transparent">SAQ Practice</h1>
       </header>
       <main className="flex flex-col justify-center content-center items-center h-[90%] w-[90%] m-5 gap-6">
         <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-full w-full p-4">
           <p className="text-xl font-bold mb-4">
             Choose a topic to practice SAQs
           </p>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 grid-rows-4 gap-4 w-full h-full">
             {topics.map((topic) => <SAQTopic key={topic.question_set_id} topic={topic.topic} route={`/saq/${topic.question_set_id}`} />)}
           </div>
         </div>
@@ -66,9 +66,15 @@ export default function SAQ() {
 }
 
 export function SAQTopic({ topic, route }: TopicObj) {
+  const prompt = `An illustration showing the key concepts of ${topic}`;
   return (
-    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300">
-      <h1>{topic}</h1>
+    <Link to={route ? route : "/"} className="relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300 flex flex-col items-center">
+      <img 
+      src={`https://image.pollinations.ai/prompt/${prompt}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
+      alt={topic}
+      className="absolute inset-0 w-full h-full object-cover rounded-xl"
+      />
+      <h1 className="relative z-10 mb-2 bg-black bg-opacity-60 px-2 py-1 rounded font-semibold">{topic}</h1>
     </Link>
   );
 }

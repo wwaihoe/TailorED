@@ -18,25 +18,26 @@ export async function action({
 }: ActionFunctionArgs) {
   const formData = await request.formData();  
   const topic = formData.get("topic") as string;
-  const difficulty = parseInt(formData.get("difficulty") as string);
+  const examples = formData.get("examples") as string;
+  const context = formData.get("context") as string;
   try {
-      const response = await fetch(`${chatModuleURLServer}/generate_mcq/`, {
+      const response = await fetch(`${chatModuleURLServer}/summarize/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ topic: topic, difficulty: difficulty }),
+        body: JSON.stringify({ topic: topic, examples: examples, context: context }),
       });
       if (!response.ok) {
-        console.log("Failed to create MCQs");
+        console.log("Failed to create summary");
       }
     } catch (error) {
       console.error(error);
     }
-    return redirect(`/mcq`);
+    return redirect(`/summarize`);
 }
 
-export default function MCQCreate() {
+export default function SummaryCreate() {
   const [input, setInput] = useState("");
   const submit = useSubmit();
   const formRef = useRef<HTMLFormElement>(null);
@@ -59,7 +60,7 @@ export default function MCQCreate() {
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
       <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
-        <h1 className="text-4xl font-extrabold m-auto text-transparent">Create MCQ</h1>
+        <h1 className="text-4xl font-extrabold m-auto text-transparent">Create Summary</h1>
       </header>
       <main className="flex h-[90%] w-[90%] justify-center">
         <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-2xl w-full h-fit">
@@ -68,7 +69,7 @@ export default function MCQCreate() {
             <div className="flex flex-col gap-5 h-full w-full"> 
               {!isSubmitting? 
               <div className="flex flex-col gap-3">
-                <div className="flex flex-row gap-3">
+                <div className="flex flex-row gap-2">
                   <input
                     disabled={isSubmitting}
                     type="text"
@@ -77,23 +78,23 @@ export default function MCQCreate() {
                     ref={inputRef}
                     onChange={(e) => setInput(e.target.value)}
                     className="w-2/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
-                    placeholder="Type the topic for MCQs..."
-                    required
+                    placeholder="Type the topic for the summary..."
                   />
-                  <select
-                    disabled={isSubmitting}
-                    name="difficulty"
-                    className="w-1/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
-                  >
-                    <option value="1">Easy</option>
-                    <option value="2">Medium</option>
-                    <option value="3">Hard</option>
-                  </select>
+                  <div className="ml-3 flex flex-col gap-1 align-middle justify-center">
+                    <div className="flex flex-row gap-1">
+                      <input disabled={isSubmitting} type="checkbox" id="examples" name="examples" value="true"/>
+                      <label htmlFor="examples" className="text-sm">Include examples</label>
+                    </div>
+                    <div className="flex flex-row gap-1">
+                      <input disabled={isSubmitting} type="checkbox" id="context" name="context" value="true"/>
+                      <label htmlFor="context" className="text-sm">Include context</label>
+                    </div>
+                  </div>
                 </div>
                 <button type="submit"
                   className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-white"
                 >
-                  Create MCQs
+                  Create Summary
                 </button>
               </div>
               :

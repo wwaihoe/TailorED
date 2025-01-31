@@ -129,8 +129,8 @@ export default function MCQ() {
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
 
-        <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300">
-          <h1 className="text-3xl font-bold m-auto text-black">MCQ Practice - {data.topic}</h1>
+        <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+          <h1 className="text-4xl font-extrabold m-auto text-transparent">MCQ Practice - {data.topic}</h1>
         </header>
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
