@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 from pydantic import BaseModel
+from typing import List, Optional
 from retrieval_model import hybrid_search
 import os
 
@@ -25,14 +26,15 @@ class FileSize(BaseModel):
   size: int
 
 class FileList(BaseModel):
-  filesizes: list
+  filesizes: List
 
 class RetrievalQuery(BaseModel):
   query: str
+  k: Optional[int] = 3
 
 class RetrievalDoc(BaseModel):
-  docs: list[str]
-  filenames: list[str]
+  docs: List[str]
+  filenames: List[str]
 
 
 @app.get("/")
@@ -74,7 +76,7 @@ def remove_document(file_id: str):
 
 @app.post("/retrieve/")
 def retrieve_documents(retrieval_query: RetrievalQuery) -> RetrievalDoc:
-  reranked_docs, all_filenames = hybrid_search.search(retrieval_query.query)
+  reranked_docs, all_filenames = hybrid_search.search(retrieval_query.query, retrieval_query.k)
   return RetrievalDoc(docs=reranked_docs, filenames=list(all_filenames))
 
 

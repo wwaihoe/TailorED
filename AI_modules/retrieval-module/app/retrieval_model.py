@@ -170,7 +170,7 @@ class HybridSearch:
     return
 
 
-  def keyword_search(self, query, k=2):
+  def keyword_search(self, query, k=3):
     # Query the BM25 model
     query_tokens = bm25s.tokenize(query)
     full_corpus = []
@@ -196,7 +196,7 @@ class HybridSearch:
     return docs, filenames
 
 
-  def vector_search(self, query, k=2):
+  def vector_search(self, query, k=3):
     # Query the vector database
     embedding_model = EmbeddingModel()
     embedding = embedding_model.encode(query)
@@ -207,7 +207,7 @@ class HybridSearch:
     return docs, filenames
 
 
-  def rerank(self, query, docs, k=2):
+  def rerank(self, query, docs, k=3):
     # Add the query to the list of documents and remove duplicates
     query_doc_pairs = []
     seen_docs = []
@@ -225,7 +225,7 @@ class HybridSearch:
     return reranked_docs[:k]
 
 
-  def search(self, query, k=2):
+  def search(self, query, k=3):
     if len(self.corpus_dict) > 0:
       print("Keyword Search...")
       keyword_docs, keyword_filenames = self.keyword_search(query, k)
