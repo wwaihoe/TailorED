@@ -10,6 +10,7 @@ import {
 } from "@remix-run/react";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
+import Markdown from 'markdown-to-jsx'
 
 const chatModuleURLServer = "http://chat-module:8001";
 const chatModuleURLClient = "http://localhost:8001";
@@ -53,6 +54,7 @@ export async function action({
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +82,12 @@ export default function Chat() {
       ]);
     }
   }, [fetcher.data]);
+
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!isSubmitting) {
@@ -118,13 +126,19 @@ export default function Chat() {
                         : "bg-gray-700 text-white"
                     }`}
                   >
-                    {msg.content}
+                    <div className="prose prose-zinc dark:prose-invert">
+                      <Markdown options={{ wrapper: 'article' }}>
+                      {msg.content}
+                      </Markdown>
+                    </div>
+                    
                   </div>
                 </div>
               ))}
               {isSubmitting && <div className="flex select-none">
                 <div className="rounded-full h-5 w-5 bg-blue-300 animate-ping"></div>
               </div>}
+              <div ref={bottomRef} className="h-28"></div>
             </div>
             <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
               <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3">
