@@ -12,11 +12,13 @@ const dataModuleURLClient = "http://localhost:8003";
 type Topic = {
   id: number;
   topic: string;
+  image_prompt: string | null;
 }
 
 type TopicObj = {
   topic: string;
   route: string;
+  image_prompt: string | null;
 }
 
 export async function loader() {
@@ -54,7 +56,7 @@ export default function Summarize() {
             Choose a topic to view generated summary
           </p>
           <div className="grid grid-cols-3 grid-rows-4 gap-4 w-full h-full">
-            {topics.map((topic) => <SummaryTopic key={topic.id} topic={topic.topic} route={`/summarize/${topic.id}`} />)}
+            {topics.map((topic) => <TopicObj key={topic.id} topic={topic.topic} route={`/summarize/${topic.id}`} image_prompt={topic.image_prompt}/>)}
           </div>
         </div>
         <Link to={"/summarize/create/fileupload"} className="px-6 py-3 mb-3 bg-blue-400 rounded-xl border-2 border-zinc-300 text-xl text-white hover:bg-blue-500 hover:border-black focus:outline-none focus:ring focus:ring-blue-300">
@@ -65,12 +67,11 @@ export default function Summarize() {
   );
 }
 
-export function SummaryTopic({ topic, route }: TopicObj) {
-  const prompt = `An illustration showing the key concepts of ${topic}`;
+function TopicObj({ topic, route, image_prompt }: TopicObj) {
   return (
     <Link to={route ? route : "/"} className="relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300 flex flex-col items-center">
       <img 
-      src={`https://image.pollinations.ai/prompt/${prompt}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
+      src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
       alt={topic}
       className="absolute inset-0 w-full h-full object-cover rounded-xl"
       />

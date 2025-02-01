@@ -1,18 +1,10 @@
-import { useRef, useState } from "react";
 import {
   useLoaderData,
-  useParams,
-  useFetcher 
 } from "@remix-run/react";
 import Markdown from 'markdown-to-jsx'
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
-import type { SAQ } from "../types/types";
 
-
-const chatModuleURLServer = "http://chat-module:8001";
 const dataModuleURLServer = "http://data-module:8003";
-const chatModuleURLClient = "http://localhost:8001";
 const dataModuleURLClient = "http://localhost:8003";
 
 
@@ -47,7 +39,6 @@ export async function loader({
 
 export default function Summary() {
   const data = useLoaderData<typeof loader>() as SummaryLoadData;
-  const prompt = `A relevant and detailed illustration of the topic: ${data.topic}`;
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
@@ -62,6 +53,7 @@ export default function Summary() {
               <Markdown options={{ wrapper: 'article' }}>
               {data.summary}
               </Markdown>
+              <div className="h-10"></div>
             </div>
           </div>
         </main>

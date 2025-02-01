@@ -65,6 +65,7 @@ class SaveSAQRequest(BaseModel):
 class QTopic(BaseModel):
   question_set_id: str
   topic: str
+  image_prompt: Optional[str] = None
 
 class RetrieveQTopicsResponse(BaseModel):
   topics: List[QTopic]
@@ -104,6 +105,7 @@ class SaveSummaryRequest(BaseModel):
 class SummaryTopic(BaseModel):
   id: int
   topic: str
+  image_prompt: Optional[str] = None
 
 class RetrieveSummaryTopicsResponse(BaseModel):
   topics: List[SummaryTopic]
@@ -111,6 +113,14 @@ class RetrieveSummaryTopicsResponse(BaseModel):
 class RetrieveSummaryResponse(BaseModel):
   topic: str
   summary: str
+
+class SaveImagePromptRequest(BaseModel):
+  topic: str
+  image_prompt: str
+
+class RetrieveImagePromptResponse(BaseModel):
+  topic: str
+  image_prompt: str
 
 
 # Create MCQ table
@@ -133,6 +143,9 @@ conn.commit()
 conn.execute('CREATE TABLE IF NOT EXISTS summary (id serial PRIMARY KEY, topic text, summary text)')
 conn.commit()
 
+# Create image prompt table
+conn.execute('CREATE TABLE IF NOT EXISTS image_prompt (topic text PRIMARY KEY, image_prompt text)')
+
 
 @app.post("/save_mcq/")
 def mcq(save_mcq_request: SaveMCQRequest):
@@ -148,6 +161,7 @@ def mcq(save_mcq_request: SaveMCQRequest):
     print(e)
     return
   
+  
 @app.post("/save_saq/")
 def saq(save_saq_request: SaveSAQRequest):
   try:
@@ -162,41 +176,45 @@ def saq(save_saq_request: SaveSAQRequest):
     print(e)
     return
   
+  
 @app.get("/retrieve_mcq_topics/")
 def retrieve_mcq_topics():
   try:
     # Retrieve MCQ topics
-    results = conn.execute('SELECT DISTINCT question_set_id, topic FROM mcq').fetchall()
-    topics = []
-    for question_set_id, topic in results:
-      topics.append({"question_set_id": question_set_id, "topic": topic})
+    results = conn.execute('SELECT DISTINCT mcq.question_set_id, mcq.topic, image_prompt.image_prompt FROM mcq JOIN image_prompt ON mcq.topic = image_prompt.topic').fetchall()
+    topics = [{"question_set_id": question_set_id, "topic": topic, "image_prompt": image_prompt} for question_set_id, topic, image_prompt in results]
     return RetrieveQTopicsResponse(topics=topics)
 
   except Exception as e:
     print("Error in retrieving MCQ topics")
     print(e)
     return
+  
 
 @app.get("/retrieve_saq_topics/")
 def retrieve_saq_topics():
   try:
     # Retrieve SAQ topics
-    results = conn.execute('SELECT DISTINCT question_set_id, topic FROM saq').fetchall()
-    topics = []
-    for question_set_id, topic in results:
-      topics.append({"question_set_id": question_set_id, "topic": topic})
+    results = conn.execute('SELECT DISTINCT saq.question_set_id, saq.topic, image_prompt.image_prompt FROM saq JOIN image_prompt ON saq.topic = image_prompt.topic').fetchall()
+    topics = [{"question_set_id": question_set_id, "topic": topic, "image_prompt": image_prompt} for question_set_id, topic, image_prompt in results]
+    return RetrieveQTopicsResponse(topics=topics)
     return RetrieveQTopicsResponse(topics=topics)
 
   except Exception as e:
     print("Error in retrieving SAQ topics")
     print(e)
     return
+  
 
 @app.get("/retrieve_mcq/{question_set_id}/")
 def retrieve_mcq(question_set_id: str):
   try:
     # Retrieve Topic
-    topic = conn.execute('SELECT topic FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchone()[0]
+    topic = conn.execute('SELECT topic FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchone()
+    if topic is None:
+      return RetrieveMCQResponse(topic="", mcqs=[], feedbacks=None)
+    else:
+      topic = topic[0]
     # Retrieve MCQs
     results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, correct_option FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchall()
     mcqs = []
@@ -212,12 +230,17 @@ def retrieve_mcq(question_set_id: str):
     print("Error in retrieving MCQs")
     print(e)
     return
+  
 
 @app.get("/retrieve_saq/{question_set_id}/")
 def retrieve_saq(question_set_id: str):
   try:
     # Retrieve Topic
-    topic = conn.execute('SELECT topic FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchone()[0]
+    topic = conn.execute('SELECT topic FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchone()
+    if topic is None:
+      return RetrieveSAQResponse(topic="", saqs=[], feedbacks=None)
+    else:
+      topic = topic[0]
     # Retrieve SAQs
     results = conn.execute('SELECT id, question, correct_answer FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchall()
     saqs = []
@@ -233,6 +256,7 @@ def retrieve_saq(question_set_id: str):
     print("Error in retrieving SAQs")
     print(e)
     return
+  
 
 @app.delete("/delete_mcq/{question_set_id}/")
 def delete_mcq(question_set_id: int):
@@ -246,6 +270,7 @@ def delete_mcq(question_set_id: int):
     print("Error in deleting MCQs")
     print(e)
     return
+  
 
 @app.delete("/delete_saq/{question_set_id}/")
 def delete_saq(question_set_id: int):
@@ -259,6 +284,7 @@ def delete_saq(question_set_id: int):
     print("Error in deleting SAQs")
     print(e)
     return
+  
 
 @app.post("/save_mcq_feedbacks/")
 def save_mcq_feedbacks(save_mcq_feedbacks_request: SaveMCQFeedbacksRequest):
@@ -278,6 +304,7 @@ def save_mcq_feedbacks(save_mcq_feedbacks_request: SaveMCQFeedbacksRequest):
     print("Error in saving MCQ feedbacks")
     print(e)
     return
+  
 
 @app.post("/save_saq_feedbacks/")
 def save_saq_feedbacks(save_saq_feedbacks_request: SaveSAQFeedbacksRequest):
@@ -297,6 +324,7 @@ def save_saq_feedbacks(save_saq_feedbacks_request: SaveSAQFeedbacksRequest):
     print("Error in saving SAQ feedbacks")
     print(e)
     return
+  
 
 @app.post("/save_summary/")
 def save_summary(save_summary_request: SaveSummaryRequest):
@@ -311,14 +339,13 @@ def save_summary(save_summary_request: SaveSummaryRequest):
     print(e)
     return
   
+  
 @app.get("/retrieve_summary_topics/")
 def retrieve_summary_topics():
   try:
     # Retrieve summaries
-    results = conn.execute('SELECT id, topic FROM summary').fetchall()
-    topics = []
-    for id, topic in results:
-      topics.append({"id": id, "topic": topic})
+    results = conn.execute('SELECT summary.id, summary.topic, image_prompt.image_prompt FROM summary JOIN image_prompt ON summary.topic = image_prompt.topic').fetchall() 
+    topics = [{"id": id, "topic": topic, "image_prompt": image_prompt} for id, topic, image_prompt in results]
     return RetrieveSummaryTopicsResponse(topics=topics)
 
   except Exception as e:
@@ -326,15 +353,52 @@ def retrieve_summary_topics():
     print(e)
     return
   
+  
 @app.get("/retrieve_summary/{summary_id}/")
 def retrieve_summary(summary_id: int):
   try:
     # Retrieve summary
     summary = conn.execute('SELECT topic, summary FROM summary WHERE id = %s', (summary_id,)).fetchone()
-    return RetrieveSummaryResponse(topic=summary[0], summary=summary[1])
+    if summary is None:
+      return RetrieveSummaryResponse(topic="", summary="")
+    else:
+      return RetrieveSummaryResponse(topic=summary[0], summary=summary[1])
 
   except Exception as e:
     print("Error in retrieving summary")
+    print(e)
+    return
+  
+  
+@app.post("/save_image_prompt/")
+def save_image_prompt(save_image_prompt_request: SaveImagePromptRequest):
+  try:
+    # Delete existing image prompt
+    conn.execute('DELETE FROM image_prompt WHERE topic = %s', (save_image_prompt_request.topic,))
+    conn.commit()
+    # Insert image prompt data
+    conn.execute(f'INSERT INTO image_prompt (topic, image_prompt) VALUES (%s, %s)', (save_image_prompt_request.topic, save_image_prompt_request.image_prompt))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in saving image prompt")
+    print(e)
+    return
+  
+  
+@app.get("/retrieve_image_prompt/{topic}/")
+def retrieve_image_prompt(topic: str):
+  try:
+    # Retrieve image prompt
+    image_prompt = conn.execute('SELECT topic, image_prompt FROM image_prompt WHERE topic = %s', (topic,)).fetchone()
+    if image_prompt is None:
+      return RetrieveImagePromptResponse(topic=topic, image_prompt="")
+    else:
+      return RetrieveImagePromptResponse(topic=image_prompt[0], image_prompt=image_prompt[1])
+
+  except Exception as e:
+    print("Error in retrieving image prompt")
     print(e)
     return
 

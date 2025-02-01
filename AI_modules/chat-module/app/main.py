@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from enum import Enum
 from chat_models import qa_chain_model, llm
-from task_models import question_generator_model, answer_evaluator_model, summarizer
+from task_models import question_generator_model, answer_evaluator_model, summarizer, image_prompt_generator
 from uuid import uuid4
 import requests
 
@@ -109,6 +109,9 @@ class SummarizeRequest(BaseModel):
   examples: Optional[bool] = False
   context: Optional[bool] = False
 
+class GenerateImagePromptRequest(BaseModel):
+  topic: str
+
 
 @app.get("/")
 def read_root():
@@ -134,6 +137,17 @@ def generate_mcq(generate_mcq_request: GenerateMCQRequest):
     if not response.ok:
       print("Error in saving MCQs")
       raise HTTPException(status_code=500, detail="Error in saving MCQs")
+    else:
+      try:
+        # Generate image prompt
+        response = generate_image_prompt(GenerateImagePromptRequest(topic=generate_mcq_request.topic))
+        if not response.ok:
+          print("Error in generating image prompt")
+          raise HTTPException(status_code=500, detail="Error in generating image prompt")
+      except Exception as e:
+        print("Error in generating image prompt")
+        print(e)
+        raise HTTPException(status_code=500, detail="Error in generating image prompt")
   except Exception as e:
     print("Error in saving MCQs")
     print(e)
@@ -155,6 +169,17 @@ def generate_saq(generate_saq_request: GenerateSAQRequest):
     if not response.ok:
       print("Error in saving SAQs")
       raise HTTPException(status_code=500, detail="Error in saving SAQs")
+    else:
+      try:
+        # Generate image prompt
+        response = generate_image_prompt(GenerateImagePromptRequest(topic=generate_saq_request.topic))
+        if not response.ok:
+          print("Error in generating image prompt")
+          raise HTTPException(status_code=500, detail="Error in generating image prompt")
+      except Exception as e:
+        print("Error in generating image prompt")
+        print(e)
+        raise HTTPException(status_code=500, detail="Error in generating image prompt")
   except Exception as e:
     print("Error in saving SAQs")
     print(e)
@@ -232,10 +257,44 @@ def summarize(summarize_request: SummarizeRequest):
     if not response.ok:
       print("Error in saving summary")
       raise HTTPException(status_code=500, detail="Error in saving summary")
+    else:
+      try:
+        # Generate image prompt
+        response = generate_image_prompt(GenerateImagePromptRequest(topic=summarize_request.topic))
+        if not response.ok:
+          print("Error in generating image prompt")
+          raise HTTPException(status_code=500, detail="Error in generating image prompt")
+      except Exception as e:
+        print("Error in generating image prompt")
+        print(e)
+        raise HTTPException(status_code=500, detail="Error in generating image prompt")
   except Exception as e:
     print("Error in saving summary")
     print(e)
     raise HTTPException(status_code=500, detail="Error in saving summary")
+  return
+
+@app.post("/generate_image_prompt/")
+def generate_image_prompt(generate_image_prompt_request: GenerateImagePromptRequest):
+  # Check if image prompt already exists
+  response = requests.get(f"http://{datamodule_name}:{datamodule_port}/retrieve_image_prompt/{generate_image_prompt_request.topic}")
+  if response.ok:
+    if response.json()["image_prompt"] != "":
+      return
+  # Generate image prompt and save
+  image_prompt = image_prompt_generator.generate_image_prompt(generate_image_prompt_request.topic)
+  if image_prompt is None:
+    raise HTTPException(status_code=500, detail="Failed to generate image prompt")
+  try:
+    body = {"topic": generate_image_prompt_request.topic, "image_prompt": image_prompt}
+    response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_image_prompt/", json=body)
+    if not response.ok:
+      print("Error in saving image prompt")
+      raise HTTPException(status_code=500, detail="Error in saving image prompt")
+  except Exception as e:
+    print("Error in saving image prompt")
+    print(e)
+    raise HTTPException(status_code=500, detail="Error in saving image prompt")
   return
 
 
