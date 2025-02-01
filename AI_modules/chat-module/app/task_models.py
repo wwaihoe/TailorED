@@ -39,8 +39,12 @@ class QuestionGenerator:
       else:
         context += "None"
       filenames = res_json["filenames"]
-      generatemcq_system_prompt = f"""You are an assistant who creates assignment questions in MCQ format with 4 options for each question. \
-Create questions that are clear, concise, and relevant to the topic. \
+      generatemcq_system_prompt = f"""You are an assistant who creates assignment questions in multiple choice question (MCQ) format with 4 options for each question."""
+      generatemcq_prompt_template = f"""Refer to the following content:
+<content>{context}</content>
+
+Based on the content, create multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+Create questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct option is accurate and well-supported by the content and the wrong options are plausible but incorrect. \
 Think carefully about the reasoning behind each option and provide a detailed reason for the correct option. \
 Return the questions in this XML format: 
@@ -52,13 +56,9 @@ Return the questions in this XML format:
 <option>{{option_d}}</option>
 </options>
 <reason_for_correct_option>{{reason for correct option}}</reason_for_correct_option>
-<correct_option>{{correct option from a, b, c or d (return only the alphabet)}}</correct_option>"""
-      generatemcq_prompt_template = f"""Create questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-Refer to the following content:
+<correct_option>{{correct option from a, b, c or d (return only the alphabet)}}</correct_option>
 
-<content>{context}</content>
-
-MCQ Questions: """
+Multiple Choice Questions (MCQs): """
       messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
       response = self.llm.chat_generate(messages)
       print("MCQs generated: " + response)
@@ -108,20 +108,20 @@ MCQ Questions: """
       context = res_json["docs"]
       context = "None" if context == "" else context
       filenames = res_json["filenames"]
-      generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer format. \
-Create questions that are clear, concise, and relevant to the topic. \
+      generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer question (SAQ) format. """
+      generatesaq_prompt_template = f"""Refer to the following content:
+<content>{context}</content>
+
+Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+Create questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct answer is accurate and well-supported by the content. \
 Think carefully about the key points that should be included in the answer and provide a detailed reason for the correct answer. \
 Create questions in this XML format: 
 <question>{{question}}</question>
 <reason_for_correct_answer>{{reason for correct answer}}</reason_for_correct_answer>
-<correct_answer>{{correct answer}}</correct_answer>"""
-      generatesaq_prompt_template = f"""Create questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-Refer to the following content:
+<correct_answer>{{correct answer}}</correct_answer>
 
-<content>{context}</content>
-
-SAQ Questions: """
+Short Answer Questions (SAQ): """
       messages = [{"role": "system", "content": generatesaq_system_prompt}, {"role": "user", "content": generatesaq_prompt_template}]
       response = self.llm.chat_generate(messages)
       qa_pairs = self.parse_saq(response)
@@ -243,7 +243,7 @@ Provide the summary in markdown format."
 Key Concepts: Highlight the most significant theories, definitions, or ideas discussed, and provide a brief explanation of each.
 {"Important Examples: Summarize any examples or case studies that help illustrate these key concepts." if examples else ""}
 Conclusions or Takeaways: Note any final conclusions or major insights provided by the lecturer.
-{"Context: If relevant, indicate how the material relates to previous lectures or broader concepts in the subject area." if context else ""}
+{"Context: If relevant, indicate how the material relates to other relevant topics or broader concepts in the subject area." if context else ""}
 Please ensure the summary is concise but captures all the critical information for an effective review.
 Notes: {context}
 
@@ -267,19 +267,25 @@ class ImagePromptGenerator:
     try:
       imageprompt_system_prompt = """You are an expert in the subject, tasked with creating a prompt for an image generation model. \
 Your goal is to provide a detailed description of the image you would like the model to generate. \
-Include specific details, such as the objects, actions, and settings you want to see in the image. \
-The more detailed and descriptive your prompt, the more accurate and relevant the generated image will be. \
+Include specific details such as the objects related to the topic in the image. \
 Return the image prompt in a XML object with the following format: <prompt>{{prompt}}</prompt>."""
       imageprompt_prompt_template = f"""Create the prompt for the image generation model for the topic: {topic}. 
-Prompt: """
+<prompt>"""
       messages = [{"role": "system", "content": imageprompt_system_prompt}, {"role": "user", "content": imageprompt_prompt_template}]
       response = self.llm.chat_generate(messages)
       # Parse prompt
-      prompt = re.search(r'<prompt>(.*?)</prompt>', response, re.DOTALL).group(1)
-      return prompt
+      match = re.search(r'(.*?)</prompt>', response, re.DOTALL)
+      if match:
+        prompt = match.group(1)
+        prompt = prompt.replace("\n", " ")
+        prompt = prompt.replace("<prompt>", "")
+        prompt = prompt.strip().strip("{}")
+        return prompt
+      else:
+        raise ValueError("Prompt not found in the response")
     
     except Exception as e:
-      print("Error in generating image prompts")
+      print("Error in generating image prompt")
       print(e)
       return None
 

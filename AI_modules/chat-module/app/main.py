@@ -63,11 +63,13 @@ class MCQ(BaseModel):
   option_b: str
   option_c: str
   option_d: str
+  reason: str
   correct_option: str
 
 class SAQ(BaseModel):
   id: int
   question: str
+  reason: str
   correct_answer: str
 
 class EvaluateMCQRequest(BaseModel):
@@ -139,11 +141,27 @@ def generate_mcq(generate_mcq_request: GenerateMCQRequest):
       raise HTTPException(status_code=500, detail="Error in saving MCQs")
     else:
       try:
+        # Check if image prompt already exists
+        response = requests.get(f"http://{datamodule_name}:{datamodule_port}/retrieve_image_prompt/{generate_mcq_request.topic}/")
+        if response.ok:
+          if response.json()["image_prompt"] != "":
+            return
         # Generate image prompt
-        response = generate_image_prompt(GenerateImagePromptRequest(topic=generate_mcq_request.topic))
-        if not response.ok:
+        image_prompt = image_prompt_generator.generate_image_prompt(generate_mcq_request.topic)
+        if image_prompt is None:
           print("Error in generating image prompt")
           raise HTTPException(status_code=500, detail="Error in generating image prompt")
+        else:
+          try:
+            body = {"topic": generate_mcq_request.topic, "image_prompt": image_prompt}
+            response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_image_prompt/", json=body)
+            if not response.ok:
+              print("Error in saving image prompt")
+              raise HTTPException(status_code=500, detail="Error in saving image prompt")
+          except Exception as e:
+            print("Error in saving image prompt")
+            print(e)
+            raise HTTPException(status_code=500, detail="Error in saving image prompt")
       except Exception as e:
         print("Error in generating image prompt")
         print(e)
@@ -171,11 +189,27 @@ def generate_saq(generate_saq_request: GenerateSAQRequest):
       raise HTTPException(status_code=500, detail="Error in saving SAQs")
     else:
       try:
+        # Check if image prompt already exists
+        response = requests.get(f"http://{datamodule_name}:{datamodule_port}/retrieve_image_prompt/{generate_saq_request.topic}/")
+        if response.ok:
+          if response.json()["image_prompt"] != "":
+            return
         # Generate image prompt
-        response = generate_image_prompt(GenerateImagePromptRequest(topic=generate_saq_request.topic))
-        if not response.ok:
+        image_prompt = image_prompt_generator.generate_image_prompt(generate_saq_request.topic)
+        if image_prompt is None:
           print("Error in generating image prompt")
           raise HTTPException(status_code=500, detail="Error in generating image prompt")
+        else:
+          try:
+            body = {"topic": generate_saq_request.topic, "image_prompt": image_prompt}
+            response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_image_prompt/", json=body)
+            if not response.ok:
+              print("Error in saving image prompt")
+              raise HTTPException(status_code=500, detail="Error in saving image prompt")
+          except Exception as e:
+            print("Error in saving image prompt")
+            print(e)
+            raise HTTPException(status_code=500, detail="Error in saving image prompt")
       except Exception as e:
         print("Error in generating image prompt")
         print(e)
@@ -259,11 +293,27 @@ def summarize(summarize_request: SummarizeRequest):
       raise HTTPException(status_code=500, detail="Error in saving summary")
     else:
       try:
+        # Check if image prompt already exists
+        response = requests.get(f"http://{datamodule_name}:{datamodule_port}/retrieve_image_prompt/{summarize_request.topic}/")
+        if response.ok:
+          if response.json()["image_prompt"] != "":
+            return
         # Generate image prompt
-        response = generate_image_prompt(GenerateImagePromptRequest(topic=summarize_request.topic))
-        if not response.ok:
+        image_prompt = image_prompt_generator.generate_image_prompt(summarize_request.topic)
+        if image_prompt is None:
           print("Error in generating image prompt")
           raise HTTPException(status_code=500, detail="Error in generating image prompt")
+        else:
+          try:
+            body = {"topic": summarize_request.topic, "image_prompt": image_prompt}
+            response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_image_prompt/", json=body)
+            if not response.ok:
+              print("Error in saving image prompt")
+              raise HTTPException(status_code=500, detail="Error in saving image prompt")
+          except Exception as e:
+            print("Error in saving image prompt")
+            print(e)
+            raise HTTPException(status_code=500, detail="Error in saving image prompt")
       except Exception as e:
         print("Error in generating image prompt")
         print(e)
@@ -277,7 +327,7 @@ def summarize(summarize_request: SummarizeRequest):
 @app.post("/generate_image_prompt/")
 def generate_image_prompt(generate_image_prompt_request: GenerateImagePromptRequest):
   # Check if image prompt already exists
-  response = requests.get(f"http://{datamodule_name}:{datamodule_port}/retrieve_image_prompt/{generate_image_prompt_request.topic}")
+  response = requests.get(f"http://{datamodule_name}:{datamodule_port}/retrieve_image_prompt/{generate_image_prompt_request.topic}/")
   if response.ok:
     if response.json()["image_prompt"] != "":
       return

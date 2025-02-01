@@ -94,7 +94,6 @@ export default function fileUpload() {
     setIsUploading(false);
   };
 
-
   return (
     <div className="w-[22.5%] bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
       <label htmlFor="document">Upload documents here:</label>

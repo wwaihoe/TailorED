@@ -67,7 +67,7 @@ export async function action({
   const additional_info = formData.get("additional_info") as string;
   const evaluate_saqs_request = [];
   for (let i = 0; i < parseInt(length); i++) {
-    const saq = {id: saqsJSON[i].id, question: saqsJSON[i].question, correct_answer: saqsJSON[i].correct_answer};  
+    const saq = {id: saqsJSON[i].id, question: saqsJSON[i].question, reason: saqsJSON[i].reason, correct_answer: saqsJSON[i].correct_answer};  
     const evaluate_saq_request = {saq: saq, input_answer: formData.get(`saq-${i}`), additional_info: additional_info === "true"? true : false};
     evaluate_saqs_request.push(evaluate_saq_request);
   }
@@ -146,7 +146,7 @@ export default function SAQ() {
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
                     <input type="text" value={data.feedbacks[index].input_answer} disabled name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
-                    <div className="mt-4 flex flex-col gap-1">
+                    <div className="mt-4 flex flex-col gap-1.5">
                       <div>
                         <p className="">
                           Your answer: {data.feedbacks[index].input_answer}
@@ -155,9 +155,22 @@ export default function SAQ() {
                           Correct Answer: {question.correct_answer}
                         </p>
                       </div>
-                      <p>
-                        {data.feedbacks[index].feedback}
-                      </p>
+                      <div>
+                        <p className="font-bold">
+                          Explanation: 
+                        </p>
+                        <p>
+                          {question.reason}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-bold">
+                          Feedback: 
+                        </p>
+                        <p>
+                          {data.feedbacks[index].feedback}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -170,7 +183,7 @@ export default function SAQ() {
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
                     <input type="text" disabled={isSubmitting} name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
-                    {fetcher.data? <div className="mt-4 flex flex-col gap-1">
+                    {fetcher.data? <div className="mt-4 flex flex-col gap-1.5">
                       <div>
                         <p className="">
                           Your answer: {fetcher.data.responses[index].input_answer}
@@ -179,9 +192,22 @@ export default function SAQ() {
                           Correct Answer: {question.correct_answer}
                         </p>
                       </div>
-                      <p>
-                        {(fetcher.data.responses as any)[index].feedback}
-                      </p>
+                      <div>
+                        <p className="font-bold">
+                          Explanation: 
+                        </p>
+                        <p>
+                          {question.reason}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-bold">
+                          Feedback: 
+                        </p>
+                        <p>
+                          {(fetcher.data.responses as any)[index].feedback}
+                        </p>
+                      </div>
                     </div>: 
                     null}
                   </div>

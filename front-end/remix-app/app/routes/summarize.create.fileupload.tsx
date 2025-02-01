@@ -99,7 +99,7 @@ export default function fileUpload() {
   return (
     <div className="flex flex-col rounded-lg p-3 items-start h-fit">
       <label htmlFor="document">Upload documents here:</label>
-      <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
+      <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 text-pretty
       file:mr-2 file:py-1 file:px-2
       file:rounded-lg file:border-0
       file:text-sm file:font-medium

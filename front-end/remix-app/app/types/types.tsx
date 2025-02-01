@@ -5,10 +5,12 @@ export type MCQ = {
   option_b: string
   option_c: string
   option_d: string
+  reason: string
   correct_option: string
 }
 
 export type SAQ = {
   question: string
+  reason: string
   correct_answer: string
 }

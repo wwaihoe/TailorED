@@ -32,6 +32,7 @@ class MCQ(BaseModel):
   option_b: str
   option_c: str
   option_d: str
+  reason: str
   correct_option: str
 
 class MCQWithID(BaseModel):
@@ -41,15 +42,18 @@ class MCQWithID(BaseModel):
   option_b: str
   option_c: str
   option_d: str
+  reason: str
   correct_option: str
 
 class SAQ(BaseModel):
   question: str
+  reason: str
   correct_answer: str
 
 class SAQWithID(BaseModel):
   id: int
   question: str
+  reason: str
   correct_answer: str
 
 class SaveMCQRequest(BaseModel):
@@ -124,35 +128,61 @@ class RetrieveImagePromptResponse(BaseModel):
 
 
 # Create MCQ table
-conn.execute('CREATE TABLE IF NOT EXISTS mcq (id serial PRIMARY KEY, question_set_id text, topic text, question text, option_a text, option_b text, option_c text, option_d text, correct_option text)')
-conn.commit()
+conn.execute("""CREATE TABLE IF NOT EXISTS mcq (
+             id serial PRIMARY KEY, 
+             question_set_id text, 
+             topic text, question text, 
+             option_a text, 
+             option_b text, 
+             option_c text, 
+             option_d text, 
+             correct_option text, 
+             reason text);""")
 
 # Create SAQ table
-conn.execute('CREATE TABLE IF NOT EXISTS saq (id serial PRIMARY KEY, question_set_id text, topic text, question text, correct_answer text)')
-conn.commit()
+conn.execute("""CREATE TABLE IF NOT EXISTS saq (
+             id serial PRIMARY KEY, 
+             question_set_id text, 
+             topic text, question text, 
+             correct_answer text, 
+             reason text);""")
 
 # Create MCQ Feedback table
-conn.execute('CREATE TABLE IF NOT EXISTS mcq_feedback (id serial PRIMARY KEY, question_set_id text, question_id int REFERENCES mcq(id), chosen_option text, feedback text)')
-conn.commit()
+conn.execute("""CREATE TABLE IF NOT EXISTS mcq_feedback (
+             id serial PRIMARY KEY, 
+             question_set_id text, 
+             question_id int REFERENCES mcq(id) ON DELETE CASCADE, 
+             chosen_option text, 
+             feedback text);""")
 
 # Create SAQ Feedback table
-conn.execute('CREATE TABLE IF NOT EXISTS saq_feedback (id serial PRIMARY KEY, question_set_id text, question_id int REFERENCES saq(id), input_answer text, feedback text)')
-conn.commit()
+conn.execute("""CREATE TABLE IF NOT EXISTS saq_feedback (
+             id serial PRIMARY KEY, 
+             question_set_id text, 
+             question_id int REFERENCES saq(id) ON DELETE CASCADE, 
+             input_answer text, 
+             feedback text);""")
 
 # Create summary table
-conn.execute('CREATE TABLE IF NOT EXISTS summary (id serial PRIMARY KEY, topic text, summary text)')
-conn.commit()
+conn.execute("""CREATE TABLE IF NOT EXISTS summary (
+             id serial PRIMARY KEY, 
+             topic text, 
+             summary text);""")
 
 # Create image prompt table
-conn.execute('CREATE TABLE IF NOT EXISTS image_prompt (topic text PRIMARY KEY, image_prompt text)')
+conn.execute("""CREATE TABLE IF NOT EXISTS image_prompt (
+             topic text PRIMARY KEY, 
+             image_prompt text);""")
+
+conn.commit()
 
 
 @app.post("/save_mcq/")
-def mcq(save_mcq_request: SaveMCQRequest):
+def save_mcq(save_mcq_request: SaveMCQRequest):
   try:
     # Insert MCQ data
     for mcq in save_mcq_request.mcqs:
-      conn.execute(f'INSERT INTO mcq (question_set_id, topic, question, option_a, option_b, option_c, option_d, correct_option) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', (save_mcq_request.question_set_id, save_mcq_request.topic, mcq.question, mcq.option_a, mcq.option_b, mcq.option_c, mcq.option_d, mcq.correct_option))
+      conn.execute(f'INSERT INTO mcq (question_set_id, topic, question, option_a, option_b, option_c, option_d, correct_option, reason) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (save_mcq_request.question_set_id, save_mcq_request.topic, mcq.question, mcq.option_a, mcq.option_b, mcq.option_c, mcq.option_d, mcq.correct_option, mcq.reason))
     conn.commit()
     return
 
@@ -163,11 +193,11 @@ def mcq(save_mcq_request: SaveMCQRequest):
   
   
 @app.post("/save_saq/")
-def saq(save_saq_request: SaveSAQRequest):
+def save_saq(save_saq_request: SaveSAQRequest):
   try:
     # Insert SAQ data
     for saq in save_saq_request.saqs:
-      conn.execute(f'INSERT INTO saq (question_set_id, topic, question, correct_answer) VALUES (%s, %s, %s, %s)', (save_saq_request.question_set_id, save_saq_request.topic, saq.question, saq.correct_answer))
+      conn.execute(f'INSERT INTO saq (question_set_id, topic, question, correct_answer, reason) VALUES (%s, %s, %s, %s, %s)', (save_saq_request.question_set_id, save_saq_request.topic, saq.question, saq.correct_answer, saq.reason))
     conn.commit()
     return
 
@@ -180,6 +210,11 @@ def saq(save_saq_request: SaveSAQRequest):
 @app.get("/retrieve_mcq_topics/")
 def retrieve_mcq_topics():
   try:
+    #CHECK
+    res = conn.execute('SELECT * FROM mcq').fetchall()
+    print(f"mcq table: {res}")
+    res = conn.execute('SELECT * FROM image_prompt').fetchall()
+    print(f"img table: {res}")
     # Retrieve MCQ topics
     results = conn.execute('SELECT DISTINCT mcq.question_set_id, mcq.topic, image_prompt.image_prompt FROM mcq JOIN image_prompt ON mcq.topic = image_prompt.topic').fetchall()
     topics = [{"question_set_id": question_set_id, "topic": topic, "image_prompt": image_prompt} for question_set_id, topic, image_prompt in results]
@@ -216,10 +251,10 @@ def retrieve_mcq(question_set_id: str):
     else:
       topic = topic[0]
     # Retrieve MCQs
-    results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, correct_option FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, correct_option, reason FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchall()
     mcqs = []
-    for id, question, option_a, option_b, option_c, option_d, correct_option in results:
-      mcqs.append({"id": id, "question": question, "option_a": option_a, "option_b": option_b, "option_c": option_c, "option_d": option_d, "correct_option": correct_option})
+    for id, question, option_a, option_b, option_c, option_d, correct_option, reason in results:
+      mcqs.append({"id": id, "question": question, "option_a": option_a, "option_b": option_b, "option_c": option_c, "option_d": option_d, "correct_option": correct_option, "reason": reason})
     results = conn.execute('SELECT question_id, chosen_option, feedback FROM mcq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
     mcq_feedbacks = []
     for question_id, chosen_option, feedback in results:
@@ -242,10 +277,10 @@ def retrieve_saq(question_set_id: str):
     else:
       topic = topic[0]
     # Retrieve SAQs
-    results = conn.execute('SELECT id, question, correct_answer FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT id, question, correct_answer, reason FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchall()
     saqs = []
-    for id, question, correct_answer in results:
-      saqs.append({"id": id, "question": question, "correct_answer": correct_answer})
+    for id, question, correct_answer, reason in results:
+      saqs.append({"id": id, "question": question, "correct_answer": correct_answer, "reason": reason})
     results = conn.execute('SELECT question_id, input_answer, feedback FROM saq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
     saq_feedbacks = []
     for question_id, input_answer, feedback in results:
@@ -259,7 +294,7 @@ def retrieve_saq(question_set_id: str):
   
 
 @app.delete("/delete_mcq/{question_set_id}/")
-def delete_mcq(question_set_id: int):
+def delete_mcq(question_set_id: str):
   try:
     # Delete MCQs
     conn.execute('DELETE FROM mcq WHERE question_set_id = %s', (question_set_id,))
@@ -273,7 +308,7 @@ def delete_mcq(question_set_id: int):
   
 
 @app.delete("/delete_saq/{question_set_id}/")
-def delete_saq(question_set_id: int):
+def delete_saq(question_set_id: str):
   try:
     # Delete SAQs
     conn.execute('DELETE FROM saq WHERE question_set_id = %s', (question_set_id,))
@@ -369,6 +404,20 @@ def retrieve_summary(summary_id: int):
     print(e)
     return
   
+
+@app.delete("/delete_summary/{summary_id}/")
+def delete_summary(summary_id: int):
+  try:
+    # Delete summary
+    conn.execute('DELETE FROM summary WHERE id = %s', (summary_id,))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in deleting summary")
+    print(e)
+    return
+  
   
 @app.post("/save_image_prompt/")
 def save_image_prompt(save_image_prompt_request: SaveImagePromptRequest):
@@ -395,10 +444,24 @@ def retrieve_image_prompt(topic: str):
     if image_prompt is None:
       return RetrieveImagePromptResponse(topic=topic, image_prompt="")
     else:
-      return RetrieveImagePromptResponse(topic=image_prompt[0], image_prompt=image_prompt[1])
+      return RetrieveImagePromptResponse(topic=topic, image_prompt=image_prompt[1])
 
   except Exception as e:
     print("Error in retrieving image prompt")
+    print(e)
+    return
+  
+
+@app.delete("/delete_image_prompt/{topic}/")
+def delete_image_prompt(topic: str):
+  try:
+    # Delete image prompt
+    conn.execute('DELETE FROM image_prompt WHERE topic = %s', (topic,))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in deleting image prompt")
     print(e)
     return
 
