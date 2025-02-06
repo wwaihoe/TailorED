@@ -2,7 +2,7 @@ import os
 import requests
 import re
 from dotenv import load_dotenv
-from LLM import LlamaCPP
+from LLM import LlamaCPPPython
 
 
 retrieval_name = "retrieval-module"
@@ -65,8 +65,9 @@ If the you do not have sufficient knowledge to answer the question, say "Sorry, 
 
 # Load LLM with default settings
 model_name = os.environ['MODEL_NAME']
-llm = LlamaCPP()
-#llm = LlamaCPPPython(model_path=f"../models/{model_name}")
+tokenizer_name = os.environ['TOKENIZER_NAME']
+#llm = LlamaCPP()
+llm = LlamaCPPPython(model_path=f"/models/{model_name}", tokenizer_name=tokenizer_name)
 #llm = Ollama(model_name=model_name)
 
 qa_chain_model = QAChain(f"http://{retrieval_name}:{retrieval_port}", llm)

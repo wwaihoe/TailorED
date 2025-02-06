@@ -1,6 +1,12 @@
-#from llama_cpp import Llama
-import openai
-import requests
+from typing import Optional
+from pydantic import BaseModel
+from llama_cpp import LogitsProcessorList
+from llama_cpp import Llama
+from transformers import AutoTokenizer
+from lmformatenforcer import JsonSchemaParser
+from lmformatenforcer.integrations.llamacpp import build_llamacpp_logits_processor, build_token_enforcer_tokenizer_data
+#import openai
+#import requests
 import os
 import dotenv
 
@@ -13,7 +19,10 @@ class LlamaCPP():
     self.server_url = server_url
     self.model_name = model_name
     defaults = {
-      "max_tokens": 4096,
+      "max_tokens": 5192,
+      "temperature": 0.3,
+      "top_p": 0.3,
+      "top_k": 0,
     }
     defaults.update(kwargs)
     self.args = defaults
@@ -74,22 +83,48 @@ class LlamaCPP():
 
 
 class LlamaCPPPython():
-  def __init__(self, model_path: str, **kwargs):
+  def __init__(self, model_path: str, tokenizer_name: str, **kwargs):
     print(f"Loading model: {model_path}...")
     self.model_path = model_path
     self.llm = Llama(
       model_path=self.model_path,
       n_gpu_layers=-1,
       seed=1234,
-      n_ctx=4096,
+      n_ctx=5192,
       flash_attn=True,
     )
 
     defaults = {
-      "max_tokens": 4096,
+      "max_tokens": 5192,
+      "temperature": 0.3,
+      "top_p": 0.3,
+      "top_k": 0,
     }
     defaults.update(kwargs)
     self.args = defaults
+
+    self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    self.tokenizer_data = build_token_enforcer_tokenizer_data(self.llm)
+
+  # lm-format-enforcer
+  def chat_generate_enforce_model(self, messages: list, output_model: BaseModel, **kwargs):
+    prompt = self.tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    character_level_parser = JsonSchemaParser(output_model.model_json_schema())
+    logits_processors: Optional[LogitsProcessorList] = None
+    if character_level_parser:
+        logits_processors = LogitsProcessorList([build_llamacpp_logits_processor(self.tokenizer_data, character_level_parser)])
+    llm_args = self.args
+    llm_args.update(kwargs)
+    
+    print("Messages: ", messages)
+    print("Args: ", llm_args)
+    output = self.llm(prompt, logits_processor=logits_processors, **llm_args)
+    response: str = output['choices'][0]['text']
+    return response
 
         
   def generate(self, prompt: str, **kwargs):
