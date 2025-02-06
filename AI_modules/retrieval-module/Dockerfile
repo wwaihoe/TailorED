@@ -19,7 +19,7 @@ RUN python3 -m pip install --upgrade pip
 
 RUN pip install "psycopg[binary,pool]"
 
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 COPY ./requirements.txt requirements.txt
 

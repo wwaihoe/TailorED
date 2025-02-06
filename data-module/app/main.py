@@ -210,11 +210,6 @@ def save_saq(save_saq_request: SaveSAQRequest):
 @app.get("/retrieve_mcq_topics/")
 def retrieve_mcq_topics():
   try:
-    #CHECK
-    res = conn.execute('SELECT * FROM mcq').fetchall()
-    print(f"mcq table: {res}")
-    res = conn.execute('SELECT * FROM image_prompt').fetchall()
-    print(f"img table: {res}")
     # Retrieve MCQ topics
     results = conn.execute('SELECT DISTINCT mcq.question_set_id, mcq.topic, image_prompt.image_prompt FROM mcq JOIN image_prompt ON mcq.topic = image_prompt.topic').fetchall()
     topics = [{"question_set_id": question_set_id, "topic": topic, "image_prompt": image_prompt} for question_set_id, topic, image_prompt in results]
@@ -232,7 +227,6 @@ def retrieve_saq_topics():
     # Retrieve SAQ topics
     results = conn.execute('SELECT DISTINCT saq.question_set_id, saq.topic, image_prompt.image_prompt FROM saq JOIN image_prompt ON saq.topic = image_prompt.topic').fetchall()
     topics = [{"question_set_id": question_set_id, "topic": topic, "image_prompt": image_prompt} for question_set_id, topic, image_prompt in results]
-    return RetrieveQTopicsResponse(topics=topics)
     return RetrieveQTopicsResponse(topics=topics)
 
   except Exception as e:

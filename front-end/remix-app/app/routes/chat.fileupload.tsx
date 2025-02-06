@@ -116,7 +116,7 @@ export default function fileUpload() {
         {files && files.map((file, index) => (
           <li key={index} className="mt-2 text-sm text-grey-500">
             <div className="flex flex-row gap-3 pl-1 border-2 border-zinc-400 rounded-xl justify-between">
-              <div className="flex flex-row justify-between w-full">
+              <div className="flex flex-row justify-between w-7/8 grow gap-3 overflow-x-auto">
                 <p>{file.name}</p>
                 <p>{file.size} Chars</p>
               </div>
