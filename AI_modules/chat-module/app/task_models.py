@@ -27,6 +27,7 @@ class QuestionGenerator:
 
   # MCQ
   def generate_mcq(self, topic: str, difficulty: Difficulty):
+    num_retries = 3
     try:
       difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
@@ -39,15 +40,13 @@ class QuestionGenerator:
       else:
         context += "None"
       filenames = res_json["filenames"]
-      generatemcq_system_prompt = f"""You are an assistant who creates assignment questions in multiple choice question (MCQ) format with 4 options for each question."""
-      generatemcq_prompt_template = f"""Refer to the following content:
-<content>{context}</content>
-
-Based on the content, create multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-Create questions that are clear, concise, and relevant to the topic using information from the content. \
+      generatemcq_system_prompt = f"""Create assignment questions in multiple choice question (MCQ) format with 4 options for each question. \
+Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct option is accurate and well-supported by the content and the wrong options are plausible but incorrect. \
 Think carefully about the reasoning behind each option and provide a detailed reason for the correct option. \
-Return the questions in this XML format: 
+Strictly do not repeat questions.
+
+Strictly return the multiple choice questions in this XML format only: 
 <question>{{question}}</question>
 <options>
 <option>{{option_a}}</option>
@@ -58,12 +57,36 @@ Return the questions in this XML format:
 <reason_for_correct_option>{{reason for correct option}}</reason_for_correct_option>
 <correct_option>{{correct option from a, b, c or d (return only the alphabet)}}</correct_option>
 
-Multiple Choice Questions (MCQs): """
-      messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      print("MCQs generated: " + response)
-      mcq_groups = self.parse_mcq(response)
-      return mcq_groups
+Refer to this example for the XML object to be returned:
+<questions>
+<question>What is the capital of France?</question>
+<options>
+<option>London</option>
+<option>Paris</option>
+<option>Berlin</option>
+<option>Rome</option>
+</options>
+<reason_for_correct_option>Paris is the capital of France.</reason_for_correct_option>
+<correct_option>b</correct_option>
+...
+</questions>"""
+      generatemcq_prompt_template = f"""Refer to the following content:
+<content>{context}</content>
+
+Based on the content, create as many relevant multiple choice questions as you are able to that are related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+Ensure that you return the questions in the specified XML format.
+Multiple Choice Questions (MCQs) XML Object: 
+<questions>"""
+      print("Generating MCQs...")
+      while num_retries > 0:
+        messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
+        response = self.llm.chat_generate(messages)
+        print("MCQs generated: " + response)
+        mcq_groups = self.parse_mcq(response)
+        if mcq_groups:
+          return mcq_groups
+        num_retries -= 1
+      return None
     
     except Exception as e:
       print("Error in generating MCQs")
@@ -101,6 +124,7 @@ Multiple Choice Questions (MCQs): """
 
   #SAQ
   def generate_saq(self, topic: str, difficulty: Difficulty):
+    num_retries = 3
     try:
       difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
@@ -108,24 +132,40 @@ Multiple Choice Questions (MCQs): """
       context = res_json["docs"]
       context = "None" if context == "" else context
       filenames = res_json["filenames"]
-      generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer question (SAQ) format. """
-      generatesaq_prompt_template = f"""Refer to the following content:
-<content>{context}</content>
-
-Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-Create questions that are clear, concise, and relevant to the topic using information from the content. \
+      generatesaq_system_prompt = f"""Creates assignment questions in short answer question (SAQ) format. \
+Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct answer is accurate and well-supported by the content. \
 Think carefully about the key points that should be included in the answer and provide a detailed reason for the correct answer. \
-Create questions in this XML format: 
+Strictly do not repeat questions.
+
+Strictly return the short answer questions in this XML format only: 
 <question>{{question}}</question>
 <reason_for_correct_answer>{{reason for correct answer}}</reason_for_correct_answer>
 <correct_answer>{{correct answer}}</correct_answer>
 
-Short Answer Questions (SAQ): """
-      messages = [{"role": "system", "content": generatesaq_system_prompt}, {"role": "user", "content": generatesaq_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      qa_pairs = self.parse_saq(response)
-      return qa_pairs
+Refer to this example for the XML object to be returned:
+<questions>
+<question>What is the capital of France?</question>
+<reason_for_correct_answer>Paris is the capital of France.</reason_for_correct_answer>
+<correct_answer>Paris</correct_answer>
+...
+</questions>"""
+      generatesaq_prompt_template = f"""Refer to the following content:
+<content>{context}</content>
+
+Based on the content, create as many relevant short answer questions as you are able to that are related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+Ensure that you return the questions in the specified XML format.
+Short Answer Questions (SAQ) XML Object: 
+<questions>"""
+      print("Generating SAQs...")
+      while num_retries > 0:
+        messages = [{"role": "system", "content": generatesaq_system_prompt}, {"role": "user", "content": generatesaq_prompt_template}]
+        response = self.llm.chat_generate(messages)
+        qa_pairs = self.parse_saq(response)
+        if qa_pairs:
+          return qa_pairs
+        num_retries -= 1
+      return None
     
     except Exception as e:
       print("Error in generating SAQs")
