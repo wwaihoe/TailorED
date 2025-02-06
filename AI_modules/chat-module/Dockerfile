@@ -10,6 +10,7 @@ RUN apt install -y python3
 RUN apt install -y python3-pip
 RUN apt install gcc -y 
 RUN apt install git -y
+RUN apt install curl -y
 
 WORKDIR /code
 

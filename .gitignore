@@ -1,3 +1,4 @@
 postgres-data/
 llama-server/models/**.gguf
+models/**.gguf
 node_modules/

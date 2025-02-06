@@ -15,6 +15,7 @@ services:
     ports: #map host port 3000 and 24678 to port 3000 and 24678 of webapp front end service
       - 3000:3000
       - 24678:24678
+    restart: unless-stopped
     depends_on: #starts service after chat-module
       chat-module:
         condition: service_healthy
@@ -36,8 +37,10 @@ services:
     ports: #map host port 3000 and 24678 to port 3000 and 24678 of webapp front end service
       - 3000:3000
       - 24678:24678
+    restart: unless-stopped
     depends_on: #starts service after chat-module
-      - chat-module
+      chat-module:
+        condition: service_healthy
     profiles:
       - development
 
@@ -55,6 +58,7 @@ services:
       #- LLAMA_SERVER_URL=http://llama-server:8002
     volumes:
       - ./models:/models
+    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -64,6 +68,12 @@ services:
               capabilities: [gpu]
     depends_on: #starts service after retrieval-module
       - retrieval-module
+    healthcheck:
+      test: curl --fail http:///0.0.0.0:8001/health/ || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
       
 
   retrieval-module: #retrieval-module
@@ -78,6 +88,7 @@ services:
       - data-module
     volumes: #create volume "/retrieval-data" in container that is mapped to "/retrieval-data" in local directory of host machine that persists data
       - ./retrieval-data:/retrieval-data
+    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -94,6 +105,7 @@ services:
       - bridgenetwork
     ports: #map host port 8003 to port 8003 of data-module service
       - 8003:8003
+    restart: unless-stopped
     depends_on: #starts service after db
       db:
         condition: service_healthy
@@ -111,6 +123,7 @@ services:
       - 5432:5432
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -122,8 +135,8 @@ services:
     container_name: llama-server
     environment:
       LLAMA_ARG_MODEL: /models/Qwen2.5-3B-Instruct-Q6_K.gguf
-      LLAMA_ARG_CTX_SIZE: 5192
-      LLAMA_ARG_N_GPU_LAYERS: 100
+      LLAMA_ARG_CTX_SIZE: 7000
+      LLAMA_ARG_N_GPU_LAYERS: 99
       LLAMA_ARG_PORT: 8002
       LLAMA_ARG_FLASH_ATTN: 1
       LLAMA_ARG_ENDPOINT_METRICS: 1

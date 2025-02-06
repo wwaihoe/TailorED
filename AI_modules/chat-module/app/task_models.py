@@ -2,7 +2,7 @@ import os
 import requests
 import re
 from dotenv import load_dotenv
-from LLM import LlamaCPPPython
+from LLM import llm
 from enum import Enum
 from pydantic import BaseModel
 from typing import Literal, List
@@ -51,6 +51,7 @@ class QuestionGenerator:
   # With lm-format-enforcer
   # MCQ
   def generate_mcq(self, topic: str, difficulty: Difficulty):
+    num_retries = 3
     try:
       difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
@@ -66,7 +67,7 @@ class QuestionGenerator:
       generatemcq_system_prompt = f"""Create assignment questions in multiple choice question (MCQ) format with 4 options for each question. \
 Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct option is accurate and well-supported by the content and the wrong options are plausible but incorrect. \
-Think carefully about the reasoning behind each option and provide a detailed reason for the correct option. \
+Think carefully about the reasoning behind each option and provide a clear and concise reason for the correct option. \
 Do not duplicate questions. 
 Strictly return the questions with this json schema only: {json.dumps(MCQs.model_json_schema())}
 
@@ -74,30 +75,44 @@ DO NOT include the options in the question field, the question field should only
 
 Refer to the example below for the correct format:
 <example>
-{{'questions': [
+{{"questions": [
   {{
-    'question': 'What is the capital of France?',
-    'option_a': 'Paris',
-    'option_b': 'London',
-    'option_c': 'Berlin',
-    'option_d': 'Rome',
-    'reason_for_correct_option': 'Paris is the capital of France.',
-    'correct_option': 'a'
+    "question": "What is the capital of France?",
+    "option_a": "Paris",
+    "option_b": "London",
+    "option_c": "Berlin",
+    "option_d": "Rome",
+    "reason_for_correct_option": "Paris is the capital of France.",
+    "correct_option": "a"
   }},
   ...
+  {{
+    "question": "What is the capital of Germany?",
+    "option_a": "Paris",
+    "option_b": "London",
+    "option_c": "Berlin",
+    "option_d": "Rome",
+    "reason_for_correct_option": "Berlin is the capital of Germany.",
+    "correct_option": "c"
+  }}
+  ]
 }}
 </example>"""
       generatemcq_prompt_template = f"""Refer to the following content:
 <content>{context}</content>
 
 Based on the content, create multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-
+Follow the json schema provided closely for the correct format.
 Multiple Choice Questions (MCQs): """
-      messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
-      response = self.llm.chat_generate_enforce_model(messages=messages, output_model=MCQs)
-      print("MCQs generated: " + response)
-      mcq_groups = self.parse_mcq(response)
-      return mcq_groups
+      while num_retries > 0:
+        messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
+        response = self.llm.chat_generate_enforce_model(messages=messages, output_model=MCQs)
+        print("MCQs generated: " + response)
+        mcq_groups = self.parse_mcq(response)
+        if mcq_groups is not None:
+          return mcq_groups
+        num_retries -= 1
+      return None
     
     except Exception as e:
       print("Error in generating MCQs")
@@ -128,83 +143,9 @@ Multiple Choice Questions (MCQs): """
     return mcq_groups
 
 
-  # MCQ
-  '''def generate_mcq(self, topic: str, difficulty: Difficulty):
-    try:
-      difficulty_str = difficulty.name
-      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
-      res_json = res.json()
-      retrieved_docs = res_json["docs"]
-      context = ""
-      if len(retrieved_docs) > 0:
-        for doc in retrieved_docs:
-          context += doc + "\n\n-----------------------------------\n\n"
-      else:
-        context += "None"
-      filenames = res_json["filenames"]
-      generatemcq_system_prompt = f"""Create assignment questions in multiple choice question (MCQ) format with 4 options for each question. \
-Create only questions that are clear, concise, and relevant to the topic using information from the content. \
-Ensure that the correct option is accurate and well-supported by the content and the wrong options are plausible but incorrect. \
-Think carefully about the reasoning behind each option and provide a detailed reason for the correct option. \
-Do not duplicate questions. 
-Strictly return the questions in this XML format only: 
-<question>{{question}}</question>
-<options>
-<option>{{option_a}}</option>
-<option>{{option_b}}</option>
-<option>{{option_c}}</option>
-<option>{{option_d}}</option>
-</options>
-<reason_for_correct_option>{{reason for correct option}}</reason_for_correct_option>
-<correct_option>{{correct option from a, b, c or d (return only the alphabet)}}</correct_option>"""
-      generatemcq_prompt_template = f"""Refer to the following content:
-<content>{context}</content>
-
-Based on the content, create multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-
-Multiple Choice Questions (MCQs): """
-      messages = [{"role": "system", "content": generatemcq_system_prompt}, {"role": "user", "content": generatemcq_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      print("MCQs generated: " + response)
-      mcq_groups = self.parse_mcq(response)
-      return mcq_groups
-    
-    except Exception as e:
-      print("Error in generating MCQs")
-      print(e)
-      return None
-    
-    
-  def parse_mcq(self, text):
-    try:
-      # Optimized regex to match the question, options, and answer sections together
-      qa_matches = re.findall(r'<question>(.*?)</question>\s*<options>(.*?)</options>\s*<reason_for_correct_option>(.*?)</reason_for_correct_option>\s*<correct_option>(.*?)</correct_option>', text, re.DOTALL)
-      # Process matches in one loop
-      mcq_groups = []
-      for question, options, reason, correct_option in qa_matches:
-        # Process options into a list
-        options_list = [opt.strip() for opt in re.findall(r'<option>(.*?)</option>', options)][:4]
-        
-        # Add the question, options, and answer to the mcq_pairs list
-        mcq_groups.append({
-          "question": question.strip().strip("{}"),
-          "option_a": options_list[0].strip("{}"),
-          "option_b": options_list[1].strip("{}"),
-          "option_c": options_list[2].strip("{}"),
-          "option_d": options_list[3].strip("{}"),
-          "reason": reason.strip().strip("{}"),
-          "correct_option": correct_option.strip().strip("{}").lower()
-        })
-    except Exception as e:
-      print("Error in parsing MCQs")
-      print(e)
-      return None
-
-    return mcq_groups'''
-
-
   # SAQ
   def generate_saq(self, topic: str, difficulty: Difficulty):
+    num_retries = 3
     try:
       difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
@@ -215,31 +156,43 @@ Multiple Choice Questions (MCQs): """
       generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer question (SAQ) format. \
 Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct answer is accurate and well-supported by the content. \
-Think carefully about the key points that should be included in the answer and provide a detailed reason for the correct answer. \
+Think carefully about the key points that should be included in the answer and provide a clear and concise reason for the correct answer. \
+Keep the reasons for the correct answers and the correct answers short and to the point, including only key points. \
 Do not duplicate questions. 
 Strictly return the questions with this json schema only: {json.dumps(SAQs.model_json_schema())}
 
 Refer to the example below for the correct format:
 <example>
-{{'questions': [
+{{"questions": [
   {{
-    'question': 'What is the capital of France?',
-    'reason_for_correct_answer': 'Paris is the capital of France.',
-    'correct_answer': 'Paris'
+    "question": "What is the capital of France?",
+    "reason_for_correct_answer': "Paris is the capital of France.",
+    "correct_answer": "Paris"
   }},
   ...
+  {{
+    "question": "What is the capital of Germany?",
+    "reason_for_correct_answer': "Berlin is the capital of Germany.",
+    "correct_answer": "Berlin"
+  }}
+  ]
 }}
 </example>"""
       generatesaq_prompt_template = f"""Refer to the following content:
 <content>{context}</content>
 
 Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-
+Follow the json schema provided closely for the correct format.
 Short Answer Questions (SAQ): """
-      messages = [{"role": "system", "content": generatesaq_system_prompt}, {"role": "user", "content": generatesaq_prompt_template}]
-      response = self.llm.chat_generate_enforce_model(messages=messages, output_model=SAQs)
-      qa_pairs = self.parse_saq(response)
-      return qa_pairs
+      while num_retries > 0:
+        messages = [{"role": "system", "content": generatesaq_system_prompt}, {"role": "user", "content": generatesaq_prompt_template}]
+        response = self.llm.chat_generate_enforce_model(messages=messages, output_model=SAQs)
+        print("SAQs generated: " + response)
+        qa_pairs = self.parse_saq(response)
+        if qa_pairs is not None:
+          return qa_pairs
+        num_retries -= 1
+      return None
     
     except Exception as e:
       print("Error in generating SAQs")
@@ -264,65 +217,6 @@ Short Answer Questions (SAQ): """
       return None
 
     return qa_pairs
-  
-
-  # SAQ
-  '''def generate_saq(self, topic: str, difficulty: Difficulty):
-    try:
-      difficulty_str = difficulty.name
-      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
-      res_json = res.json()
-      context = res_json["docs"]
-      context = "None" if context == "" else context
-      filenames = res_json["filenames"]
-      generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer question (SAQ) format. \
-Create only questions that are clear, concise, and relevant to the topic using information from the content. \
-Ensure that the correct answer is accurate and well-supported by the content. \
-Think carefully about the key points that should be included in the answer and provide a detailed reason for the correct answer. \
-Do not duplicate questions. 
-Strictly return the questions in this XML format only: 
-<question>{{question}}</question>
-<reason_for_correct_answer>{{reason for correct answer}}</reason_for_correct_answer>
-<correct_answer>{{correct answer}}</correct_answer>"""
-      generatesaq_prompt_template = f"""Refer to the following content:
-<content>{context}</content>
-
-Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-
-Short Answer Questions (SAQ): """
-      messages = [{"role": "system", "content": generatesaq_system_prompt}, {"role": "user", "content": generatesaq_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      qa_pairs = self.parse_saq(response)
-      return qa_pairs
-    
-    except Exception as e:
-      print("Error in generating SAQs")
-      print(e)
-      return None
-    
-
-  def parse_saq(self, text):
-    try:
-      # Optimized regex to match the question and answer sections together
-      qa_matches = re.findall(
-        r'<question>(.*?)</question>\s*<reason_for_correct_answer>(.*?)</reason_for_correct_answer>\s*<correct_answer>(.*?)</correct_answer>',
-        text,
-        re.DOTALL
-      )
-      # Process matches in one loop
-      qa_pairs = []
-      for question, reason, answer in qa_matches:
-        # Add the question and answer to the qa_pairs list
-        qa_pairs.append({
-          "question": question.strip().strip("{}"),
-          "reason": reason.strip().strip("{}"),
-          "correct_answer": answer.strip().strip("{}")
-        })
-    except Exception as e:
-      print("Error in parsing SAQs")
-      print(e)
-      return
-    return qa_pairs'''
   
 
 
@@ -461,13 +355,6 @@ Strictly return the image prompt in a XML object with the following format only:
       return None
 
 
-
-# Load LLM with default settings
-model_name = os.environ['MODEL_NAME']
-tokenizer_name = os.environ['TOKENIZER_NAME']
-#llm = LlamaCPP()
-llm = LlamaCPPPython(model_path=f"/models/{model_name}", tokenizer_name=tokenizer_name)
-#llm = Ollama(model_name=model_name)
 
 question_generator_model = QuestionGenerator(f"http://{retrieval_name}:{retrieval_port}", llm)
 answer_evaluator_model = AnswerEvaluator(f"http://{retrieval_name}:{retrieval_port}", llm)

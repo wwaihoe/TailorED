@@ -19,7 +19,7 @@ class LlamaCPP():
     self.server_url = server_url
     self.model_name = model_name
     defaults = {
-      "max_tokens": 5192,
+      "max_tokens": 7000,
       "temperature": 0.3,
       "top_p": 0.3,
       "top_k": 0,
@@ -90,12 +90,12 @@ class LlamaCPPPython():
       model_path=self.model_path,
       n_gpu_layers=-1,
       seed=1234,
-      n_ctx=5192,
+      n_ctx=7000,
       flash_attn=True,
     )
 
     defaults = {
-      "max_tokens": 5192,
+      "max_tokens": 7000,
       "temperature": 0.3,
       "top_p": 0.3,
       "top_k": 0,
@@ -167,8 +167,8 @@ class Ollama():
     #  "min_p": 0.5,
     #  "top_p": 1.0,
     #  "top_k": 0,
-      "num_predict": 5192,
-      "num_ctx": 5192,
+      "num_predict": 7000,
+      "num_ctx": 7000,
     }
     defaults.update(kwargs)
     self.args = defaults
@@ -221,3 +221,12 @@ class Ollama():
     print(f"output: {output}")
     response = output["message"]["content"]
     return response
+  
+
+
+# Load LLM with default settings
+model_name = os.environ['MODEL_NAME']
+tokenizer_name = os.environ['TOKENIZER_NAME']
+#llm = LlamaCPP()
+llm = LlamaCPPPython(model_path=f"/models/{model_name}", tokenizer_name=tokenizer_name)
+#llm = Ollama(model_name=model_name)
