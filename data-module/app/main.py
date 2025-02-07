@@ -26,6 +26,28 @@ password="admin"
 conn = psycopg.connect(f"host={host} port={port} dbname={dbname} user={user} password={password}")
 
 
+class Message(BaseModel):
+  timestamp: str
+  role: str
+  content: str
+
+class SaveMessageRequest(BaseModel):
+  chat_id: str
+  timestamp: str
+  role: str
+  content: str
+
+class Chat(BaseModel):
+  chat_id: str
+  timestamp: str
+  message: str
+
+class RetrieveChatsResponse(BaseModel):
+  chats: List[Chat]
+
+class RetrieveMessagesResponse(BaseModel):
+  messages: List[Message]
+
 class MCQ(BaseModel):
   question: str
   option_a: str
@@ -127,6 +149,18 @@ class RetrieveImagePromptResponse(BaseModel):
   image_prompt: str
 
 
+# Set timezone to SGT
+conn.execute("SET TIMEZONE='Asia/Singapore';")
+conn.commit()
+
+# Create Message table
+conn.execute("""CREATE TABLE IF NOT EXISTS message (
+             id serial PRIMARY KEY,
+             chat_id text,
+             timestamp timestamp,
+             role text,
+             content text);""")
+
 # Create MCQ table
 conn.execute("""CREATE TABLE IF NOT EXISTS mcq (
              id serial PRIMARY KEY, 
@@ -176,6 +210,48 @@ conn.execute("""CREATE TABLE IF NOT EXISTS image_prompt (
 
 conn.commit()
 
+
+@app.post("/save_message/")
+def save_message(save_message_request: SaveMessageRequest):
+  try:
+    # Insert message data
+    conn.execute(f'INSERT INTO message (chat_id, timestamp, role, content) VALUES (%s, %s, %s, %s)', (save_message_request.chat_id, save_message_request.timestamp, save_message_request.role, save_message_request.content))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in saving message")
+    print(e)
+    return
+  
+
+@app.get("/retrieve_chats/")
+def retrieve_chats():
+  try:
+    # Retrieve first message from each chat
+    results = conn.execute('SELECT chat_id, TO_CHAR(timestamp, "YYYY/MM/DD HH:MM:SS"), role, content FROM message WHERE timestamp = (SELECT MIN(timestamp) FROM message GROUP BY chat_id) ORDER BY timestamp DESC').fetchall()
+    chats = [{"chat_id": chat_id, "timestamp": timestamp, "role": role, "content": content} for chat_id, timestamp, role, content in results]
+    return RetrieveChatsResponse(chats=chats)
+  
+  except Exception as e:
+    print("Error in retrieving chats")
+    print(e)
+    return
+  
+
+@app.get("/retrieve_messages/{chat_id}/")
+def retrieve_messages(chat_id: str):
+  try:
+    # Retrieve messages
+    results = conn.execute('SELECT TO_CHAR(timestamp, "YYYY/MM/DD HH:MM:SS"), role, content FROM message WHERE chat_id = %s ORDER BY timestamp', (chat_id,)).fetchall()
+    messages = [{"timestamp": timestamp, "role": role, "content": content} for timestamp, role, content in results]
+    return RetrieveMessagesResponse(messages=messages)
+
+  except Exception as e:
+    print("Error in retrieving messages")
+    print(e)
+    return
+    
 
 @app.post("/save_mcq/")
 def save_mcq(save_mcq_request: SaveMCQRequest):

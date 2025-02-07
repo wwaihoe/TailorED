@@ -2,6 +2,7 @@ import {
   Link,
 } from "@remix-run/react";
 import type { MetaFunction } from "@remix-run/node";
+import { v4 as uuidv4 } from 'uuid';
 
 export const meta: MetaFunction = () => {
   return [
@@ -59,7 +60,7 @@ export function Task({ name, route }: TaskObj) {
 
 
 const tasks = [
-  {name: "Chat", route: "/chat/fileupload"},
+  {name: "Chat", route: `/fileupload/chat/${uuidv4()}`},
   {name: "MCQ Practice", route: "/mcq"},
   {name: "SAQ Practice", route: "/saq"},
   {name: "Summarize Notes", route: "/summarize"},
