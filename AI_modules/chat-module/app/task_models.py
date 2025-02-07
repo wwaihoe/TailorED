@@ -52,6 +52,7 @@ class QuestionGenerator:
   # MCQ
   def generate_mcq(self, topic: str, difficulty: Difficulty):
     num_retries = 3
+    num_retries = 3
     try:
       difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})

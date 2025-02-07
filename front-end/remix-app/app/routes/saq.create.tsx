@@ -28,7 +28,7 @@ export async function action({
         body: JSON.stringify({ topic: topic, difficulty: difficulty }),
       });
       if (!response.ok) {
-        console.log("Failed to create MCQs");
+        console.log("Failed to create SAQs");
       }
     } catch (error) {
       console.error(error);
