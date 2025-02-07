@@ -115,9 +115,9 @@ class GenerateImagePromptRequest(BaseModel):
   topic: str
 
 
-@app.get("/")
-def read_root():
-  return {"Server": "On"}
+@app.get("/health/")
+def health_check():
+  return {"status": "healthy"}
 
 @app.post("/chat/")
 def get_response(chat_request: ChatRequest):
