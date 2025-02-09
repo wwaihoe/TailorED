@@ -1,21 +1,20 @@
-import {
-  Link,
-} from "@remix-run/react";
+import { Link } from "@remix-run/react";
 import type { MetaFunction } from "@remix-run/node";
 import { v4 as uuidv4 } from 'uuid';
 
+
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "TailorED" },
+    { name: "description", content: "Welcome to TailorED!" },
   ];
 };
-
 
 type TaskObj = {
   name: string;
   route?: string;
 }
+
 
 export default function Index() {
   return (

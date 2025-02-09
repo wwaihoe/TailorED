@@ -1,12 +1,16 @@
 import { useRef, useState } from "react";
-import {
-  useLoaderData,
-  useParams,
-  useFetcher 
-} from "@remix-run/react";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useParams, useFetcher } from "@remix-run/react";
+import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import type { SAQ } from "../types/types";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "SAQ Practice" },
+    { name: "description", content: "Practice SAQs" },
+  ];
+};
 
 
 const chatModuleURLServer = "http://chat-module:8001";

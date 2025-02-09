@@ -1,6 +1,14 @@
 import { useRef, useState } from "react";
-import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
+import { MetaFunction, useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import type { ActionFunctionArgs } from "@remix-run/node";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Create MCQs" },
+    { name: "description", content: "Create Practice MCQs" },
+  ];
+};
 
 
 const retrievalModuleURLServer = "http://retrieval-module:8000";

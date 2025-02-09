@@ -1,6 +1,14 @@
 import { useRef, useState } from "react";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Create Summaries" },
+    { name: "description", content: "Create Summaries of Notes" },
+  ];
+};
 
 
 const retrievalModuleURLServer = "http://retrieval-module:8000";

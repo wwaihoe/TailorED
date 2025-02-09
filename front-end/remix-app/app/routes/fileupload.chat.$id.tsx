@@ -3,11 +3,20 @@ import {
   useParams,
   useLoaderData, 
   useFetcher,
-  Outlet,
 } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import Markdown from 'markdown-to-jsx'
+import type { MetaFunction } from "@remix-run/node";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "TailorED Chat" },
+    { name: "description", content: "Chat with TailorED!" },
+  ];
+};
+
 
 const chatModuleURLServer = "http://chat-module:8001";
 const chatModuleURLClient = "http://localhost:8001";
@@ -53,22 +62,54 @@ export async function action({
   request,
   params
 }: ActionFunctionArgs) {
-  const formData = await request.formData();  
-  const query = formData.get("query") as string;
-  const prevMessages = formData.get("messages");
-  const prevMessageJSON = prevMessages ? JSON.parse(prevMessages as string) : [];
-  const inputMessages = [...prevMessageJSON, { role: "user", content: query }];
+  const formData = await request.formData(); 
+  const inputMessages = formData.get("messages");
+  const inputMessagesJSON = inputMessages ? JSON.parse(inputMessages as string) : [];
+  console.log("Input messages: ", inputMessagesJSON);
+
+  // save message to db
+  const message = inputMessagesJSON[inputMessagesJSON.length - 1];
+  const saveMessageBody = { chat_id: params.id, timestamp: message.timestamp, role: message.role, content: message.content };
+  console.log("Save message body: ", saveMessageBody);
+  try {
+    const response = await fetch(`${dataModuleURLServer}/save_message/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(saveMessageBody),
+    });
+    if (!response.ok) {
+      console.error("Failed to save message.");
+    }
+    else {
+      console.log("User message saved successfully.");
+    }
+  }
+  catch (error) {
+    console.error("Failed to save message.");
+    console.error(error);
+  }
+  
+  // generate response
+  console.log("Generating response...");
+  // include only role and content
+  inputMessagesJSON.forEach((message: any) => {
+    delete message.timestamp;
+  });
   try {
     const response = await fetch(`${chatModuleURLServer}/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ messages: inputMessages }),
+      body: JSON.stringify({ messages: inputMessagesJSON }),
     });
     if (response.ok) {
       const data = await response.json();
+      console.log("Response generated successfully");
       // save message to db
+      console.log("Saving assistant message...");
       try {
         const response = await fetch(`${dataModuleURLServer}/save_message/`, {
           method: "POST",
@@ -79,6 +120,9 @@ export async function action({
         });
         if (!response.ok) {
           console.error("Failed to save message.");
+        }
+        else {
+          console.log("Assistant message saved successfully.");
         }
       }
       catch (error) {
@@ -113,27 +157,12 @@ export default function Chat() {
   const handleSubmit = async (event: any) => {
     event.preventDefault()
     const message = { timestamp: new Date(Date.now()).toISOString(), role: "user", content: input };
+    console.log("User message: ", message);
     setMessages((prev) => [...prev, message]);
-    // save message to db
-    try {
-      const response = await fetch(`${dataModuleURLServer}/save_message/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ chat_id: params.chat_id, timestamp: message.timestamp, role: message.role, content: message.content }),
-      });
-      if (!response.ok) {
-        console.error("Failed to save message.");
-      }
-    }
-    catch (error) {
-      console.error("Failed to save message.");
-      console.error(error);
-    }
     if (formRef.current) {
       const submitFormData = new FormData(formRef.current);
-      submitFormData.append("messages", JSON.stringify(messages));
+      const requestMessages = [...messages, message];
+      submitFormData.append("messages", JSON.stringify(requestMessages));
       fetcher.submit(
         submitFormData,
         { method: "post" }
@@ -202,7 +231,7 @@ export default function Chat() {
       </div>
       <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
         <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3">
-          {!isSubmitting? 
+          {!isSubmitting ? 
           <input
             type="text"
             name="query"
@@ -221,7 +250,7 @@ export default function Chat() {
             placeholder="Type your message..."
           />
           }
-          {!isSubmitting? 
+          {!isSubmitting ? 
           <button type="submit"
             className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-white"
           >

@@ -1,13 +1,17 @@
 import { useRef, useState } from "react";
-import {
-  useLoaderData,
-  useParams,
-  useFetcher 
-} from "@remix-run/react";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useParams, useFetcher } from "@remix-run/react";
+import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import type { MCQ } from "../types/types";
 import { c } from "vite/dist/node/types.d-aGj9QkWt";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "MCQ Practice" },
+    { name: "description", content: "Practice MCQs" },
+  ];
+};
 
 
 const chatModuleURLServer = "http://chat-module:8001";

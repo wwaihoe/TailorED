@@ -1,3 +1,14 @@
+import type { MetaFunction } from "@remix-run/node";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "TailorED" },
+    { name: "description", content: "About TailorED!" },
+  ];
+};
+
+
 export default function About() {
   return (
     <div className="flex w-screen h-screen items-center justify-center bg-zinc-900">

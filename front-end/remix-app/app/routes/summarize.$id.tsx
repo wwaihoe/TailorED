@@ -1,8 +1,15 @@
-import {
-  useLoaderData,
-} from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import Markdown from 'markdown-to-jsx'
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Summaries" },
+    { name: "description", content: "Summary of Notes" },
+  ];
+};
+
 
 const dataModuleURLServer = "http://data-module:8003";
 const dataModuleURLClient = "http://localhost:8003";

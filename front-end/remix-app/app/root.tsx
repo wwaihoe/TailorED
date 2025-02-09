@@ -8,6 +8,7 @@ import {
   MetaFunction,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
+import { v4 as uuidv4 } from 'uuid';
 
 import styles from "./tailwind.css?url";
 
@@ -57,7 +58,10 @@ export default function App() {
             <div className="flex flex-col gap-3 items-center">
               <Link to="/" className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">Home</Link>
               <Link to="/about" className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">About</Link>
-              <Link to="/history" className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">History</Link>
+              <Link to={`/fileupload/chat/${uuidv4()}`} className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">Chat</Link>
+              <Link to="/history" className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">Chat History</Link>
+              <Link to="/mcq" className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">MCQ</Link>
+              <Link to="/saq" className="w-fit text-xl text-center font-semibold hover:bg-zinc-900 hover:text-blue-400 p-3 rounded-xl">SAQ</Link>
             </div>
             </nav>
           <Outlet />

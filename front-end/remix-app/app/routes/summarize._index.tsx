@@ -1,5 +1,13 @@
 import { useLoaderData, Link, useFetcher } from "@remix-run/react";
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
+
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Summaries" },
+    { name: "description", content: "Get Summaries of Notes" },
+  ];
+};
 
 
 const dataModuleURLServer = "http://data-module:8003";

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 import psycopg
 
 
@@ -27,20 +28,21 @@ conn = psycopg.connect(f"host={host} port={port} dbname={dbname} user={user} pas
 
 
 class Message(BaseModel):
-  timestamp: str
+  timestamp: datetime
   role: str
   content: str
 
 class SaveMessageRequest(BaseModel):
   chat_id: str
-  timestamp: str
+  timestamp: datetime
   role: str
   content: str
 
 class Chat(BaseModel):
   chat_id: str
-  timestamp: str
-  message: str
+  timestamp: datetime
+  role: str
+  content: str
 
 class RetrieveChatsResponse(BaseModel):
   chats: List[Chat]
@@ -149,10 +151,6 @@ class RetrieveImagePromptResponse(BaseModel):
   image_prompt: str
 
 
-# Set timezone to SGT
-conn.execute("SET TIMEZONE='Asia/Singapore';")
-conn.commit()
-
 # Create Message table
 conn.execute("""CREATE TABLE IF NOT EXISTS message (
              id serial PRIMARY KEY,
@@ -229,7 +227,7 @@ def save_message(save_message_request: SaveMessageRequest):
 def retrieve_chats():
   try:
     # Retrieve first message from each chat
-    results = conn.execute('SELECT chat_id, TO_CHAR(timestamp, "YYYY/MM/DD HH:MM:SS"), role, content FROM message WHERE timestamp = (SELECT MIN(timestamp) FROM message GROUP BY chat_id) ORDER BY timestamp DESC').fetchall()
+    results = conn.execute('SELECT chat_id, message.timestamp, role, content FROM message JOIN (SELECT MIN(timestamp) AS timestamp FROM message GROUP BY chat_id) message_ts ON message.timestamp = message_ts.timestamp ORDER BY message.timestamp DESC').fetchall()
     chats = [{"chat_id": chat_id, "timestamp": timestamp, "role": role, "content": content} for chat_id, timestamp, role, content in results]
     return RetrieveChatsResponse(chats=chats)
   
@@ -243,7 +241,7 @@ def retrieve_chats():
 def retrieve_messages(chat_id: str):
   try:
     # Retrieve messages
-    results = conn.execute('SELECT TO_CHAR(timestamp, "YYYY/MM/DD HH:MM:SS"), role, content FROM message WHERE chat_id = %s ORDER BY timestamp', (chat_id,)).fetchall()
+    results = conn.execute('SELECT timestamp, role, content FROM message WHERE chat_id = %s ORDER BY timestamp', (chat_id,)).fetchall()
     messages = [{"timestamp": timestamp, "role": role, "content": content} for timestamp, role, content in results]
     return RetrieveMessagesResponse(messages=messages)
 
