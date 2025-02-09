@@ -142,9 +142,9 @@ class HybridSearch:
     
   def add_speech(self, filepath: str, filename: str, filesize: float):
     speech_recognition_model = SpeechRecognitionModel()
-    speech = self.speech_recognition_model.generate(filepath)
+    speech = speech_recognition_model.generate(filepath)
     del speech_recognition_model
-    corpus = self.text_splitter.split_text(speech)
+    corpus = self.split_document(speech)
     self.add_documents(filename, corpus)
     return
     

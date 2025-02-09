@@ -41,7 +41,7 @@ class QAChain:
         context += "None"
       filenames = res_json["filenames"]
       conversationqa_prompt_template = f"""Use the following context to answer the human's question. 
-Provide only a single clear and concise response in an XML object of this format: <response><reason>{{reason}}</reason><answer>{{answer}}</answer>. 
+Provide only a single clear and concise response in an XML object of this format: <response><reason>{{reason}}</reason><answer>{{answer}}</answer></response>. 
 If the you do not have sufficient knowledge to answer the question, say "Sorry, I do not have sufficient knowledge to answer the question.". 
 
 <context>{context}</context>
@@ -51,8 +51,16 @@ If the you do not have sufficient knowledge to answer the question, say "Sorry, 
 <response>"""
       input_messages.append({"role": "user", "content": conversationqa_prompt_template})
       response = self.llm.chat_generate(input_messages)
-      reason = re.search(r'<reason>(.*?)</reason>', response, re.DOTALL).group(1)
-      answer = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL).group(1)
+      reason_matches = re.search(r'<reason>(.*?)</reason>', response, re.DOTALL)
+      if reason_matches is not None:
+        reason = reason_matches.group(1)
+      else:
+        reason = "Error with model"
+      answer_matches = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL)
+      if answer_matches is not None:
+        answer = answer_matches.group(1)
+      else:
+        answer = "Sorry, I do not have sufficient knowledge to answer the question."
       output = {"reason": reason, "answer": answer}
     except Exception as e:
       print(e)

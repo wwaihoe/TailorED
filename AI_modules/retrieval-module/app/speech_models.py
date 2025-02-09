@@ -8,31 +8,23 @@ if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'
-    
-torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
 
 class SpeechRecognitionModel():
-  def __init__(self, model_str: str="openai/whisper-large-v3-turbo"):
-    self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-        model_str, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
-    )
-    self.model.to(device)
-    self.processor = AutoProcessor.from_pretrained(model_str)
+  def __init__(self, model_str: str="openai/whisper-base.en"):
     self.pipe = pipeline(
-        "automatic-speech-recognition",
-        model=self.model,
-        tokenizer=self.processor.tokenizer,
-        feature_extractor=self.processor.feature_extractor,
-        max_new_tokens=128,
-        torch_dtype=torch_dtype,
-        device=device,
+      "automatic-speech-recognition",
+      model=model_str,
+      chunk_length_s=30,
+      device=device,
     )
   
   def generate(self, filepath: str):
     try:
-      result = self.pipe(filepath)
+      prediction = self.pipe(filepath, batch_size=8)["text"]
+      print("Generated speech: ", prediction)
     except Exception as e:
       print("Error generating speech")
       print(e)
-    return result["text"]
+      return None
+    return prediction

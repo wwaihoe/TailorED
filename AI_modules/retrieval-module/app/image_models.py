@@ -7,8 +7,8 @@ if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'
-    
-    
+
+
 class ImageCaptionModel():
   def __init__(self, model_str: str="microsoft/Florence-2-base-ft"):
     self.model = AutoModelForCausalLM.from_pretrained(model_str, trust_remote_code=True)
@@ -28,10 +28,12 @@ class ImageCaptionModel():
       )
       generated_text = self.processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
       parsed_answer = self.processor.post_process_generation(generated_text, task="<MORE_DETAILED_CAPTION>", image_size=(image.width, image.height))
+      caption = parsed_answer["<MORE_DETAILED_CAPTION>"]
+      print("Generated caption: ", caption)
     except Exception as e:
       print("Error generating caption")
       print(e)
-    return parsed_answer["<MORE_DETAILED_CAPTION>"]
+    return caption
   
   def load_image(self, file):
     try:

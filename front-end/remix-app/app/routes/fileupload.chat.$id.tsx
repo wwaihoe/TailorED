@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  useParams,
-  useLoaderData, 
-  useFetcher,
-} from "@remix-run/react";
+import { useParams, useLoaderData, useFetcher } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import Markdown from 'markdown-to-jsx'

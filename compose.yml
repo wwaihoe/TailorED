@@ -15,7 +15,6 @@ services:
     ports: #map host port 3000 and 24678 to port 3000 and 24678 of webapp front end service
       - 3000:3000
       - 24678:24678
-    restart: unless-stopped
     depends_on: #starts service after chat-module
       chat-module:
         condition: service_healthy
@@ -37,7 +36,6 @@ services:
     ports: #map host port 3000 and 24678 to port 3000 and 24678 of webapp front end service
       - 3000:3000
       - 24678:24678
-    restart: unless-stopped
     depends_on: #starts service after chat-module
       chat-module:
         condition: service_healthy
@@ -58,7 +56,6 @@ services:
       #- LLAMA_SERVER_URL=http://llama-server:8002
     volumes:
       - ./models:/models
-    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -88,7 +85,6 @@ services:
       - data-module
     volumes: #create volume "/retrieval-data" in container that is mapped to "/retrieval-data" in local directory of host machine that persists data
       - ./retrieval-data:/retrieval-data
-    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -105,7 +101,6 @@ services:
       - bridgenetwork
     ports: #map host port 8003 to port 8003 of data-module service
       - 8003:8003
-    restart: unless-stopped
     depends_on: #starts service after db
       db:
         condition: service_healthy
@@ -123,7 +118,6 @@ services:
       - 5432:5432
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
-    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -155,9 +149,8 @@ services:
               capabilities: [gpu]
     networks:
       - bridgenetwork
-    restart: unless-stopped
     healthcheck:
-      test: curl -f http://localhost:8002/health || exit 1
+      test: curl --fail http://localhost:8002/health || exit 1
       interval: 20s
       timeout: 30s
       retries: 8

@@ -107,14 +107,14 @@ export default function fileUpload() {
   return (
     <div className="flex flex-col rounded-lg p-3 items-start h-fit">
       <label htmlFor="document">Upload documents here:</label>
-      <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf" className="w-full mt-2 text-sm text-grey-500 text-pretty
+      <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf, text/plain, image/png, image/jpeg, audio/mpeg" className="w-full mt-2 text-sm text-grey-500 text-pretty
       file:mr-2 file:py-1 file:px-2
       file:rounded-lg file:border-0
       file:text-sm file:font-medium
       file:bg-blue-400 file:text-white
       hover:file:cursor-pointer hover:file:bg-blue-500"
       onChange={handleUpload} />
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF, TXT, MP3, PNG, JPEG.</p>
       {isUploading && 
       <div className='select-none flex space-x-2 justify-center items-center mt-5'>
         <span className='sr-only'>Loading...</span>

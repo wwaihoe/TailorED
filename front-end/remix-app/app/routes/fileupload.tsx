@@ -101,19 +101,19 @@ export default function fileUpload() {
       </header>
       <main className="flex flex-row w-full h-[90%] bg-zinc-900">
         <Outlet/>
-        <div className="w-[22.5%] bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
+        <div className="w-[22.5%] flex flex-col bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
           
           <label htmlFor="document">Upload documents here:</label>
-          <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf" className="mt-2 text-sm text-grey-500 truncate text-pretty
+          <input disabled={isUploading} ref={inputRef} type="file" id="document" name="document" accept="application/pdf, text/plain, image/png, image/jpeg, audio/mpeg" className="mt-2 text-sm text-grey-500 truncate text-pretty
           file:mr-2 file:py-1 file:px-2
           file:rounded-lg file:border-0
           file:text-sm file:font-medium
           file:bg-blue-400 file:text-white
           hover:file:cursor-pointer hover:file:bg-blue-500"
           onChange={handleUpload} />
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF or TXT.</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">PDF, TXT, MP3, PNG, JPEG.</p>
           {isUploading && 
-          <div className='flex space-x-2 justify-center items-center'>
+          <div className='flex mt-5 space-x-2 justify-center items-center'>
             <span className='sr-only'>Loading...</span>
             <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]'></div>
             <div className='h-5 w-5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]'></div>

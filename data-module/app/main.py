@@ -249,6 +249,20 @@ def retrieve_messages(chat_id: str):
     print("Error in retrieving messages")
     print(e)
     return
+  
+
+@app.delete("/delete_chat/{chat_id}/")
+def delete_chat(chat_id: str):
+  try:
+    # Delete chat
+    conn.execute('DELETE FROM message WHERE chat_id = %s', (chat_id,))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in deleting chat")
+    print(e)
+    return
     
 
 @app.post("/save_mcq/")
