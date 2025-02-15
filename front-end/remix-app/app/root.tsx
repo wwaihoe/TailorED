@@ -47,21 +47,23 @@ export default function App() {
       <body>
         <div className="flex flex-row">
           <nav className="navbar w-[12.5%] flex flex-col pt-10 gap-7 bg-zinc-800 font-sans text-white items-center">
-            <div className="flex flex-row">
-              <p className="text-3xl font-light text-white">
-                Tailor
-              </p>
-              <p className="text-3xl font-bold text-red-200">
-                ED
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 items-center">
-              <Link to="/" className="w-fit text-xl text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Home</Link>
-              <Link to="/about" className="w-fit text-xl text-center font-semibold hover:text-blue-400 p-3 rounded-xl">About</Link>
-              <Link to={`/fileupload/chat/${uuidv4()}`} className="w-fit text-xl text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Chat</Link>
-              <Link to="/history" className="w-fit text-xl text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Chat History</Link>
-              <Link to="/mcq" className="w-fit text-xl text-center font-semibold hover:text-blue-400 p-3 rounded-xl">MCQ</Link>
-              <Link to="/saq" className="w-fit text-xl text-center font-semibold hover:text-blue-400 p-3 rounded-xl">SAQ</Link>
+            <Link to="/">
+              <div className="flex flex-row select-none">
+                <p className="text-3xl font-light text-white">
+                  Tailor
+                </p>
+                <p className="text-3xl font-bold text-red-200">
+                  ED
+                </p>
+              </div>
+            </Link>
+            <div className="flex flex-col items-center">
+              <Link to="/about" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">About</Link>
+              <Link to={`/fileupload/chat/${uuidv4()}`} className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Chat</Link>
+              <Link to="/history" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Chat History</Link>
+              <Link to="/mcq" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">MCQ</Link>
+              <Link to="/saq" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">SAQ</Link>
+              <Link to="summarize" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Summarize</Link>
             </div>
             </nav>
           <Outlet />

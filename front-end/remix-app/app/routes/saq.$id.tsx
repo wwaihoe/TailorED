@@ -68,11 +68,11 @@ export async function action({
   const saqs = formData.get("saqs") as string;
   const saqsJSON = JSON.parse(saqs);
   const length = formData.get("length") as string;
-  const additional_info = formData.get("additional_info") as string;
+  const additional_info = formData.get("additional_info");
   const evaluate_saqs_request = [];
   for (let i = 0; i < parseInt(length); i++) {
     const saq = {id: saqsJSON[i].id, question: saqsJSON[i].question, reason: saqsJSON[i].reason, correct_answer: saqsJSON[i].correct_answer};  
-    const evaluate_saq_request = {saq: saq, input_answer: formData.get(`saq-${i}`), additional_info: additional_info === "true"? true : false};
+    const evaluate_saq_request = {saq: saq, input_answer: formData.get(`saq-${i}`), additional_info: additional_info !== null ? true : false};
     evaluate_saqs_request.push(evaluate_saq_request);
   }
   const body = {

@@ -70,11 +70,11 @@ export async function action({
   const mcqs = formData.get("mcqs") as string;
   const mcqsJSON = JSON.parse(mcqs);
   const length = formData.get("length") as string;
-  const additional_info = formData.get("additional_info") as string;
+  const additional_info = formData.get("additional_info");
   const evaluate_mcqs_request = [];
   for (let i = 0; i < parseInt(length); i++) {
     const mcq = {id: mcqsJSON[i].id, question: mcqsJSON[i].question, option_a: mcqsJSON[i].option_a, option_b: mcqsJSON[i].option_b, option_c: mcqsJSON[i].option_c, option_d: mcqsJSON[i].option_d, reason: mcqsJSON[i].reason, correct_option: mcqsJSON[i].correct_option};  
-    const evaluate_mcq_request = {mcq: mcq, chosen_option: formData.get(`mcq-${i}`), additional_info: additional_info === "true"? true : false};
+    const evaluate_mcq_request = {mcq: mcq, chosen_option: formData.get(`mcq-${i}`), additional_info: additional_info !== null ? true : false};
     evaluate_mcqs_request.push(evaluate_mcq_request);
   }
   const body = {

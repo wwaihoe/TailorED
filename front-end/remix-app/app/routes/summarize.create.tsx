@@ -18,15 +18,15 @@ export async function action({
 }: ActionFunctionArgs) {
   const formData = await request.formData();  
   const topic = formData.get("topic") as string;
-  const examples = formData.get("examples") as string;
-  const context = formData.get("context") as string;
+  const examples = formData.get("examples");
+  const context = formData.get("context");
   try {
       const response = await fetch(`${chatModuleURLServer}/summarize/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ topic: topic, examples: examples, context: context }),
+        body: JSON.stringify({ topic: topic, examples: examples !== null ? true : false, context: context !== null ? true : false }),
       });
       if (!response.ok) {
         console.log("Failed to create summary");

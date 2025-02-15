@@ -103,17 +103,17 @@ function TopicObj({ question_set_id, topic, route, image_prompt }: TopicObj) {
   const isSubmitting = fetcher.state !== "idle";
 
   return (
-    <div className="w-full h-full relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300 flex flex-col items-center">
+    <div className="w-full h-full relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
       {isSubmitting ? 
       <div>
         <button className="w-full h-full relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
           <img 
           src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
           alt={topic}
-          className="absolute inset-0 w-full h-full object-cover rounded-xl"
+          className="absolute inset-0 w-full h-full object-cover rounded-xl brightness-50"
           />
           <div className="overflow-y-auto pt-3">
-            <h1 className="relative z-10 bg-black bg-opacity-60 px-2 py-1 rounded font-semibold">{topic}</h1>
+            <h1 className="relative z-10 bg-black bg-opacity-70 px-2 py-1 rounded font-semibold">{topic}</h1>
           </div>
           
         </button>
@@ -122,15 +122,15 @@ function TopicObj({ question_set_id, topic, route, image_prompt }: TopicObj) {
         </button>
       </div>
       :
-      <div>
+      <div className="hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300 ">
         <Link to={route ? route : "/"} className="p-3">
           <img 
           src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
           alt={topic}
-          className="absolute inset-0 w-full h-full object-cover rounded-xl"
+          className="absolute inset-0 w-full h-full object-cover rounded-xl brightness-75"
           />
           <div className="overflow-y-auto pt-3">
-            <h1 className="relative z-10 bg-black bg-opacity-60 px-2 py-1 rounded font-semibold">{topic}</h1>
+            <h1 className="relative z-10 bg-black bg-opacity-70 px-2 py-1 rounded font-semibold">{topic}</h1>
           </div>
         </Link>
         <fetcher.Form method="post" className="absolute top-0 right-0">

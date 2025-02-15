@@ -190,7 +190,7 @@ export default function Chat() {
 
 
   return (
-    <div className="flex flex-col w-2/3 mx-5 overflow-y-auto p-6 bg-zinc-900">
+    <div className="flex flex-col w-3/4 mx-5 overflow-y-auto p-6 bg-zinc-900">
       <div className="h-full w-5/6 self-center">
         {messages.length === 0 && (
           <p className="text-center text-gray-400">
