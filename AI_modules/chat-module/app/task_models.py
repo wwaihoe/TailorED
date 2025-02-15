@@ -88,12 +88,12 @@ Refer to the example below for the correct format:
   }},
   ...
   {{
-    "question": "What is the capital of Germany?",
-    "option_a": "Paris",
-    "option_b": "London",
-    "option_c": "Berlin",
-    "option_d": "Rome",
-    "reason_for_correct_option": "Berlin is the capital of Germany.",
+    "question": "What type of animal is a kangaroo?",
+    "option_a": "Bird",
+    "option_b": "Reptile",
+    "option_c": "Mammal",
+    "option_d": "Fish",
+    "reason_for_correct_option": "Kangaroos are mammals because they have fur or hair, are warm-blooded, and females produce milk to feed their young.",
     "correct_option": "c"
   }}
   ]
@@ -154,27 +154,27 @@ Multiple Choice Questions (MCQs): """
       context = res_json["docs"]
       context = "None" if context == "" else context
       filenames = res_json["filenames"]
-      generatesaq_system_prompt = f"""You are an assistant who creates assignment questions in short answer question (SAQ) format. \
+      generatesaq_system_prompt = f"""Create assignment questions in short answer question (SAQ) format. \
 Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct answer is accurate and well-supported by the content. \
 Think carefully about the key points that should be included in the answer and provide a clear and concise reason for the correct answer. \
-Keep the reasons for the correct answers and the correct answers short and to the point, including only key points. \
+Keep the reasons for the correct answers and the correct answers to a maximum of THREE sentences each.** Brevity is key. \
 Do not duplicate questions. 
 Strictly return the questions with this json schema only: {json.dumps(SAQs.model_json_schema())}
 
-Refer to the example below for the correct format:
+Refer to the example below for the correct format. Note the length of the answers and reasons in the example are all within the sentence limit:
 <example>
 {{"questions": [
   {{
-    "question": "What is the capital of France?",
-    "reason_for_correct_answer': "Paris is the capital of France.",
-    "correct_answer": "Paris"
+    "question": "What is the highest mountain in the world?",
+    "reason_for_correct_answer": "Mount Everest is widely recognized as the Earth's highest mountain above sea level.",
+    "correct_answer": "Mount Everest"
   }},
   ...
   {{
-    "question": "What is the capital of Germany?",
-    "reason_for_correct_answer': "Berlin is the capital of Germany.",
-    "correct_answer": "Berlin"
+    "question": "What is the chemical symbol for water?",
+    "reason_for_correct_answer": "Water is a chemical substance with the chemical formula H2O, meaning each molecule consists of two hydrogen atoms and one oxygen atom.",
+    "correct_answer": "H2O"
   }}
   ]
 }}
@@ -183,6 +183,7 @@ Refer to the example below for the correct format:
 <content>{context}</content>
 
 Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+**Ensure that all answers and reasons are concise and do not exceed THREE sentences each.**
 Follow the json schema provided closely for the correct format.
 Short Answer Questions (SAQ): """
       while num_retries > 0:
@@ -233,7 +234,7 @@ class AnswerEvaluator:
 Evaluate the chosen option for a multiple choice question. Read the question, correct option and chosen option carefully. \
 Then, provide constructive feedback on the chosen option. \
 Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. Otherwise, provide positive feedback. \
-{additional_info_prompt if additional_info else ""} \
+{additional_info_prompt if additional_info == True else ""} \
 Give your answer in full sentences."""
       evaluatemcq_prompt_template = f"""Evaluate the chosen option for the following multiple choice question. Read the question, correct option, reason and chosen option carefully. \
 
@@ -265,7 +266,7 @@ Feedback: """
 Evaluate the input answer for a short answer question. Read the question, correct answer and input answer carefully. \
 Then, provide constructive feedback on the input answer. \
 Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. Otherwise, provide positive feedback. \
-{additional_info_prompt if additional_info else ""} \
+{additional_info_prompt if additional_info == True else ""} \
 Do not mention the correct answer in your feedback. \
 Give your answer in full sentences."""
       evaluatesaq_prompt_template = f"""Evaluate the input answer for the following short answer question. Read the question, correct answer, reason and input answer carefully. \
@@ -302,13 +303,13 @@ class Summarizer:
       summarizer_system_prompt = "You are a highly proficient summarizer tasked with analyzing and condensing information into clear, detailed and well-structured summaries. \
 Your goal is to extract the most important points from the provided lecture notes, ensuring that the key concepts, examples, and conclusions are conveyed in a concise, easy-to-understand manner. \
 Always organize your responses logically, focus on clarity, and maintain brevity while preserving the core meaning of the content. \
-Provide the summary in markdown format."
+Format your summary in a clear and structured manner, ensuring that it captures the essence of the lecture notes effectively."
       summarizer_prompt_template = f"""Please summarize the following lecture notes, focusing on the key areas outlined below:
 {f"Focusing on this topic: {topic}, briefly describe the overarching subjects covered." if topic != None else "Main Topics: Briefly describe the overarching subjects covered in the lecture."}
 Key Concepts: Highlight the most significant theories, definitions, or ideas discussed, and provide a clear explanation of each.
-{"Important Examples: Summarize any examples or case studies that help illustrate these key concepts." if examples else ""}
+{"Important Examples: Summarize any examples or case studies that help illustrate these key concepts." if examples == True else ""}
 Conclusions or Takeaways: Note any final conclusions or major insights provided by the lecturer.
-{"Context: If relevant, indicate how the material relates to other relevant topics or broader concepts in the subject area." if context else ""}
+{"Context: If relevant, indicate how the material relates to other relevant topics or broader concepts in the subject area." if context == True else ""}
 Please ensure the summary is concise but captures all the critical information for an effective review.
 
 Notes: {context}
@@ -332,19 +333,25 @@ class ImagePromptGenerator:
   def generate_image_prompt(self, topic:str):
     try:
       imageprompt_system_prompt = """You are an expert in the subject, tasked with creating a prompt for an image generation model. \
-Your goal is to provide a detailed description of the image you would like the model to generate. \
-Include specific details such as the objects related to the topic in the image. \
-Strictly return the image prompt in a XML object with the following format only: <prompt>{{prompt}}</prompt>"""
+Your goal is to provide a detailed description of the image you would like the model to generate to illustrate a topic. \
+Think step-by-step about the key elements, objects, and context that should be included in the image before providing the prompt. \
+Provide only a single clear and concise response in an XML object of this format: <response><think>{step-by-step thought}</think><prompt>{prompt}</prompt></response>."""
       imageprompt_prompt_template = f"""Create the prompt for the image generation model for the topic: {topic}. 
-<prompt>"""
+Think step-by-step about the key elements, objects, and context that should be included in the image before providing the prompt: <response>"""
       messages = [{"role": "system", "content": imageprompt_system_prompt}, {"role": "user", "content": imageprompt_prompt_template}]
       response = self.llm.chat_generate(messages)
+      # Parse reason
+      reason_matches = re.search(r'<think>(.*?)</think>', response, re.DOTALL)
+      if reason_matches:
+        reason = reason_matches.group(1)
+      else:
+        reason = "Error with model"
+
       # Parse prompt
-      match = re.search(r'(.*?)</prompt>', response, re.DOTALL)
-      if match:
-        prompt = match.group(1)
+      prompt_matches = re.search(r'<prompt>(.*?)</prompt>', response, re.DOTALL)
+      if prompt_matches:
+        prompt = prompt_matches.group(1)
         prompt = prompt.replace("\n", " ")
-        prompt = prompt.replace("<prompt>", "")
         prompt = prompt.strip().strip("{}")
         return prompt
       else:

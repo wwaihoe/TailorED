@@ -24,7 +24,11 @@ class QAChain:
     message_list = [message.model_dump() for message in messages]
     print(message_list)
     input_query = message_list[-1]["content"]
-    input_messages = [{"role": "system", "content": "You are an assistant who answers questions accurately."},]
+    input_messages = [{"role": "system", "content": '''You are an assistant who provides accurate and informative responses to user queries. \
+Try to use the context provided to answer the query. \
+Think step-by-step before providing an answer. \
+Provide only a single clear and concise response in an XML object of this format:  <response><think>{{step-by-step thought}}</think><answer>{{answer}}</answer></response>. \
+If you do not have sufficient knowledge to answer the query, say "Sorry, I do not have sufficient knowledge to provide a response."'''},]
     input_messages.extend(message_list)
     try:
       retrieval_query = ""
@@ -40,18 +44,16 @@ class QAChain:
       else:
         context += "None"
       filenames = res_json["filenames"]
-      conversationqa_prompt_template = f"""Use the following context to answer the human's question. 
-Provide only a single clear and concise response in an XML object of this format: <response><reason>{{reason}}</reason><answer>{{answer}}</answer></response>. 
-If the you do not have sufficient knowledge to answer the question, say "Sorry, I do not have sufficient knowledge to answer the question.". 
-
+      conversationqa_prompt_template = f"""Use the following context to respond to the user query.
+    
 <context>{context}</context>
 
 <query>{input_query}</query>
 
-<response>"""
+Think step-by-step before providing an answer: <response>"""
       input_messages.append({"role": "user", "content": conversationqa_prompt_template})
       response = self.llm.chat_generate(input_messages)
-      reason_matches = re.search(r'<reason>(.*?)</reason>', response, re.DOTALL)
+      reason_matches = re.search(r'<think>(.*?)</think>', response, re.DOTALL)
       if reason_matches is not None:
         reason = reason_matches.group(1)
       else:
@@ -60,7 +62,7 @@ If the you do not have sufficient knowledge to answer the question, say "Sorry, 
       if answer_matches is not None:
         answer = answer_matches.group(1)
       else:
-        answer = "Sorry, I do not have sufficient knowledge to answer the question."
+        answer = "Sorry, I do not have sufficient knowledge to provide a response."
       output = {"reason": reason, "answer": answer}
     except Exception as e:
       print(e)
