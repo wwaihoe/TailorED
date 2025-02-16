@@ -222,7 +222,10 @@ class HybridSearch:
     # Sort the documents by score
     reranked_docs = [doc for score, doc in sorted(zip(scores, seen_docs), reverse=True)]
     # Return top-k documents
-    return reranked_docs[:k]
+    if len(reranked_docs) < k:
+      return reranked_docs
+    else:
+      return reranked_docs[:k]
 
 
   def search(self, query, k=3):
