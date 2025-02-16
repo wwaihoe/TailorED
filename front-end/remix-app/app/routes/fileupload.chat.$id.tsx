@@ -99,32 +99,11 @@ export async function action({
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ messages: inputMessagesJSON }),
+      body: JSON.stringify({ messages: inputMessagesJSON, chat_id: params.id, timestamp: new Date(Date.now()).toISOString() }),
     });
     if (response.ok) {
       const data = await response.json();
       console.log("Response generated successfully");
-      // save message to db
-      console.log("Saving assistant message...");
-      try {
-        const response = await fetch(`${dataModuleURLServer}/save_message/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ chat_id: params.id, timestamp: new Date(Date.now()).toISOString(), role: "assistant", content: data.output.answer }),
-        });
-        if (!response.ok) {
-          console.error("Failed to save message.");
-        }
-        else {
-          console.log("Assistant message saved successfully.");
-        }
-      }
-      catch (error) {
-        console.error("Failed to save message.");
-        console.error(error);
-      }
       return json({ role: "assistant", content: data.output.answer, filenames: data.filenames });
     }
     else {
@@ -207,11 +186,11 @@ export default function Chat() {
             <div
               className={`max-w-screen-md p-4 rounded-md ${
                 msg.role === "user"
-                  ? "bg-zinc-700 text-white"
-                  : "bg-gray-700 text-white"
+                  ? "bg-zinc-700"
+                  : "bg-gray-700"
               }`}
             >
-              <div className="prose prose-zinc dark:prose-invert">
+              <div className="prose prose-zinc dark:prose-invert prose-base text-white">
                 <Markdown options={{ wrapper: 'article' }}>
                 {msg.content}
                 </Markdown>
@@ -223,7 +202,7 @@ export default function Chat() {
         {isSubmitting && <div className="flex select-none">
           <div className="rounded-full h-5 w-5 bg-blue-300 animate-ping"></div>
         </div>}
-        <div ref={bottomRef} className="h-28"></div>
+        <div ref={bottomRef} className="h-28 select-none"></div>
       </div>
       <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
         <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3">

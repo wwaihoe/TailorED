@@ -40,7 +40,7 @@ export default function Index() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="flex flex-row gap-4">
           {tasks.map((task) => <Task key={task.name} name={task.name} route={task.route} />)}
         </div>
       </main>
@@ -63,4 +63,5 @@ const tasks = [
   {name: "MCQ Practice", route: "/mcq"},
   {name: "SAQ Practice", route: "/saq"},
   {name: "Summarize Notes", route: "/summarize"},
+  {name: "Study Plan", route: "/studyplan"},
 ]

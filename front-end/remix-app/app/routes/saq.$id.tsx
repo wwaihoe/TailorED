@@ -23,18 +23,26 @@ type SAQFeedback = {
   question_id: number;
   input_answer: string;
   feedback: string;
+  score: number;
 }
 
 type SAQLoadData = {
   topic: string;
   saqs: SAQ[];
   feedbacks: SAQFeedback[];
+  total_score: number;
 }
 
-type EvaluateSAQResponse = {
+type SAQEvaluation = {
   saq: SAQ;
   input_answer: string;
   feedback: string;
+  score: number;
+}
+
+type EvaluateSAQResponse = {
+  responses: SAQEvaluation[];
+  total_score: number;
 }
 
 
@@ -45,6 +53,7 @@ export async function loader({
     const response = await fetch(`${dataModuleURLServer}/retrieve_saq/${params.id}/`);
     if (response.ok) {
       const data = await response.json();
+      console.log("Retrieved SAQ data: ", data);
       return data;
     }
     else {
@@ -108,7 +117,7 @@ export default function SAQ() {
   const data = useLoaderData<typeof loader>() as SAQLoadData;
   const params = useParams();
   const formRef = useRef<HTMLFormElement>(null);
-  const fetcher = useFetcher<{ responses: EvaluateSAQResponse[] }>();
+  const fetcher = useFetcher<EvaluateSAQResponse>();
   const isSubmitting = fetcher.state === "submitting";
 
   const [showFeedback, setShowFeedback] = useState<Boolean>(false);
@@ -144,17 +153,17 @@ export default function SAQ() {
                 </button>
             </div>}
             {showFeedback ?
-            <div>
+            <div className="mb-10 overflow-y-auto">
+              <div className="flex justify-center mb-4">
+                <p className="font-bold">Score: {data.total_score}/{5*data.saqs.length}</p>
+              </div>
               {data.saqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
-                    <input type="text" value={data.feedbacks[index].input_answer} disabled name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
+                    <textarea rows={3} value={data.feedbacks[index].input_answer} disabled name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
                     <div className="mt-4 flex flex-col gap-1.5">
                       <div>
-                        <p className="">
-                          Your answer: {data.feedbacks[index].input_answer}
-                        </p>
                         <p className="font-bold">
                           Correct Answer: {question.correct_answer}
                         </p>
@@ -175,23 +184,26 @@ export default function SAQ() {
                           {data.feedbacks[index].feedback}
                         </p>
                       </div>
+                      <p className="font-bold">
+                        Score: {data.feedbacks[index].score}/5
+                      </p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
             :
-            <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit}>
+            <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit} className="mb-10 overflow-y-auto">
+              {fetcher.data && <div className="flex justify-center mb-4">
+                <p className="font-bold">Score: {fetcher.data.total_score}/{5*data.saqs.length}</p>
+              </div>}
               {data.saqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
-                    <input type="text" required disabled={isSubmitting} name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
+                    <textarea rows={3} required disabled={isSubmitting} name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."></textarea>
                     {fetcher.data? <div className="mt-4 flex flex-col gap-1.5">
                       <div>
-                        <p className="">
-                          Your answer: {fetcher.data.responses[index].input_answer}
-                        </p>
                         <p className="font-bold">
                           Correct Answer: {question.correct_answer}
                         </p>
@@ -212,13 +224,16 @@ export default function SAQ() {
                           {(fetcher.data.responses as any)[index].feedback}
                         </p>
                       </div>
+                      <p className="font-bold">
+                        Score: {(fetcher.data.responses as any)[index].score}/5
+                      </p>
                     </div>: 
                     null}
                   </div>
                 </div>
               ))}
               {!isSubmitting ?
-              <div className="pb-14 mt-10 flex flex-row justify-center items-center gap-4">
+              <div className="mt-10 flex flex-row justify-center items-center gap-4 mb-10">
                 <div className="flex flex-row gap-1">
                   <input disabled={isSubmitting} type="checkbox" id="additional_info" name="additional_info" value="true"/>
                   <label htmlFor="additional_info">Additional information</label>
@@ -226,7 +241,7 @@ export default function SAQ() {
                 <button disabled={isSubmitting} type="submit" className="p-2 bg-blue-400 text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400 rounded-lg text-md">Get feedback</button>
               </div>
               :
-              <div className="mt-10 pb-14 justify-center items-center flex flex-row gap-1 select-none mb-10">
+              <div className="mt-10 justify-center items-center flex flex-row gap-1 select-none mb-10">
                 <p>Getting Feedback</p>
                 <span className="relative flex h-5 w-5 justify-center items-center">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>

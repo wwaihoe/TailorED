@@ -21,6 +21,7 @@ const dataModuleURLClient = "http://localhost:8003";
 
 
 type MCQFeedback = {
+  question_set_id: number;
   question_id: number;
   chosen_option: string;
   feedback: string;
@@ -29,13 +30,19 @@ type MCQFeedback = {
 type MCQLoadData = {
   topic: string;
   mcqs: MCQ[];
-  feedbacks: MCQFeedback[];
+  feedbacks: MCQFeedback[] | null;
+  num_correct: number | null;
 }
 
-type EvaluateMCQResponse = {
+type MCQEvaluation = {
   mcq: MCQ;
   chosen_option: string;
   feedback: string;
+}
+
+type EvaluateMCQResponse = {
+  responses: MCQEvaluation[];
+  num_correct: number;
 }
 
 
@@ -110,7 +117,7 @@ export default function MCQ() {
   const data = useLoaderData<typeof loader>() as MCQLoadData;
   const params = useParams();
   const formRef = useRef<HTMLFormElement>(null);
-  const fetcher = useFetcher<{ responses: EvaluateMCQResponse[] }>();
+  const fetcher = useFetcher<EvaluateMCQResponse>();
   const isSubmitting = fetcher.state === "submitting";
 
   const [showFeedback, setShowFeedback] = useState<Boolean>(false);
@@ -146,7 +153,10 @@ export default function MCQ() {
               </button>
             </div>}
             {showFeedback?
-            <div>
+            <div className="mb-10 overflow-y-auto">
+              <div className="flex justify-center mb-4">
+                <p className="font-bold">Score: {data.num_correct}/{data.mcqs.length}</p>
+              </div>
               {data.mcqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
@@ -154,29 +164,29 @@ export default function MCQ() {
                     <ul className="list-inside">
                       <div className="flex flex-row justify-between">
                         <li key={0}>{(10).toString(36).toLowerCase()}. {question.option_a}</li>
-                        <input disabled type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toLowerCase()}/>
+                        <input disabled type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "a"}/>
                       </div>
                       <div className="flex flex-row justify-between">
                         <li key={1}>{(11).toString(36).toLowerCase()}. {question.option_b}</li>
-                        <input disabled type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toLowerCase()}/>
+                        <input disabled type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "b"}/>
                       </div>
                       <div className="flex flex-row justify-between">
                         <li key={2}>{(12).toString(36).toLowerCase()}. {question.option_c}</li>
-                        <input disabled type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toLowerCase()}/>
+                        <input disabled type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "c"}/>
                       </div>
                       <div className="flex flex-row justify-between">
                         <li key={3}>{(13).toString(36).toLowerCase()}. {question.option_d}</li>
-                        <input disabled type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()}/>
+                        <input disabled type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "d"}/>
                       </div>
                     </ul>
                     <div className="mt-4 flex flex-col gap-1.5">
-                      {data.feedbacks[index].chosen_option === question.correct_option?
+                      {data.feedbacks?.[index]?.chosen_option === question.correct_option?
                       <p className="font-bold text-green-400">
                         Chosen Option: {data.feedbacks[index].chosen_option}
                       </p>:
                       <div>
                         <p className="font-bold text-red-400">
-                          Chosen Option: {data.feedbacks[index].chosen_option}
+                          Chosen Option: {data.feedbacks?.[index].chosen_option}
                         </p>
                         <p className="font-bold">
                           Correct Option: {question.correct_option}
@@ -195,7 +205,7 @@ export default function MCQ() {
                           Feedback: 
                         </p>
                         <p>
-                          {data.feedbacks[index].feedback}
+                          {data.feedbacks?.[index].feedback}
                         </p>
                       </div>
                     </div>
@@ -204,7 +214,11 @@ export default function MCQ() {
               ))}
             </div>
             :
-            <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit}>
+            <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit} className="mb-10 overflow-y-auto">
+              {fetcher.data && 
+              <div className="flex justify-center mb-4">
+                <p className="font-bold">Score: {fetcher.data.num_correct}/{data.mcqs.length}</p>
+              </div>}
               {data.mcqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
@@ -262,7 +276,7 @@ export default function MCQ() {
                 </div>
               ))}
               {!isSubmitting ?
-              <div className="pb-14 mt-10 flex flex-row justify-center items-center gap-4">
+              <div className="mt-10 flex flex-row justify-center items-center gap-4 mb-10">
                 <div className="flex flex-row gap-1">
                   <input disabled={isSubmitting} type="checkbox" id="additional_info" name="additional_info" value="true"/>
                   <label htmlFor="additional_info">Additional information</label>
@@ -270,7 +284,7 @@ export default function MCQ() {
                 <button disabled={isSubmitting} type="submit" className="p-2 bg-blue-400 text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400 rounded-lg text-md">Get feedback</button>
               </div>
               :
-              <div className="mt-10 pb-14 justify-center items-center flex flex-row gap-1 select-none mb-10">
+              <div className="mt-10 justify-center items-center flex flex-row gap-1 select-none mb-10">
                 <p>Getting Feedback</p>
                 <span className="relative flex h-5 w-5 justify-center items-center">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>

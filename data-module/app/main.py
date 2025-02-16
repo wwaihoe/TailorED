@@ -108,23 +108,28 @@ class RetrieveMCQResponse(BaseModel):
   topic: str
   mcqs: List[MCQWithID]
   feedbacks: Optional[List[MCQFeedback]] = None
+  num_correct: Optional[int] = None
 
 class SAQFeedback(BaseModel):
   question_set_id: str
   question_id: int
   input_answer: str
   feedback: str
+  score: int
 
 class RetrieveSAQResponse(BaseModel):
   topic: str
   saqs: List[SAQWithID]
   feedbacks: Optional[List[SAQFeedback]] = None
+  total_score: Optional[int] = None
 
 class SaveMCQFeedbacksRequest(BaseModel):
   mcq_feedbacks: List[MCQFeedback]
+  num_correct: int
 
 class SaveSAQFeedbacksRequest(BaseModel):
   saq_feedbacks: List[SAQFeedback]
+  total_score: int
 
 class SaveSummaryRequest(BaseModel):
   topic: str
@@ -141,6 +146,31 @@ class RetrieveSummaryTopicsResponse(BaseModel):
 class RetrieveSummaryResponse(BaseModel):
   topic: str
   summary: str
+
+class RetrieveAllTopicsResponse(BaseModel):
+  topics: List[str]
+
+class MCQScore(BaseModel):
+  topic: str
+  num_questions: int
+  num_correct: int
+
+class SAQScore(BaseModel):
+  topic: str
+  max_score: int
+  total_score: int
+
+class RetrieveAllScoresResponse(BaseModel):
+  mcq_scores: List[MCQScore]
+  saq_scores: List[SAQScore]
+
+class SaveStudyPlanRequest(BaseModel):
+  timestamp: datetime
+  study_plan: str
+
+class RetrieveStudyPlanResponse(BaseModel):
+  timestamp: Optional[datetime] = None
+  study_plan: Optional[str] = None
 
 class SaveImagePromptRequest(BaseModel):
   topic: str
@@ -163,7 +193,8 @@ conn.execute("""CREATE TABLE IF NOT EXISTS message (
 conn.execute("""CREATE TABLE IF NOT EXISTS mcq (
              id serial PRIMARY KEY, 
              question_set_id text, 
-             topic text, question text, 
+             topic text, 
+             question text, 
              option_a text, 
              option_b text, 
              option_c text, 
@@ -175,7 +206,8 @@ conn.execute("""CREATE TABLE IF NOT EXISTS mcq (
 conn.execute("""CREATE TABLE IF NOT EXISTS saq (
              id serial PRIMARY KEY, 
              question_set_id text, 
-             topic text, question text, 
+             topic text, 
+             question text, 
              correct_answer text, 
              reason text);""")
 
@@ -190,16 +222,37 @@ conn.execute("""CREATE TABLE IF NOT EXISTS mcq_feedback (
 # Create SAQ Feedback table
 conn.execute("""CREATE TABLE IF NOT EXISTS saq_feedback (
              id serial PRIMARY KEY, 
-             question_set_id text, 
+             question_set_id text,
              question_id int REFERENCES saq(id) ON DELETE CASCADE, 
              input_answer text, 
-             feedback text);""")
+             feedback text,
+             score int);""")
+
+# Create MCQ scores table
+conn.execute("""CREATE TABLE IF NOT EXISTS mcq_scores (
+             id serial PRIMARY KEY, 
+             question_set_id text,
+             num_questions int,
+             num_correct int);""")
+
+# Create SAQ scores table
+conn.execute("""CREATE TABLE IF NOT EXISTS saq_scores (
+             id serial PRIMARY KEY,
+             question_set_id text, 
+             max_score int,
+             total_score int);""")
 
 # Create summary table
 conn.execute("""CREATE TABLE IF NOT EXISTS summary (
              id serial PRIMARY KEY, 
              topic text, 
              summary text);""")
+
+# Create study plan table
+conn.execute("""CREATE TABLE IF NOT EXISTS study_plan (
+             id serial PRIMARY KEY, 
+             timestamp timestamp, 
+             study_plan text);""")
 
 # Create image prompt table
 conn.execute("""CREATE TABLE IF NOT EXISTS image_prompt (
@@ -341,7 +394,9 @@ def retrieve_mcq(question_set_id: str):
     mcq_feedbacks = []
     for question_id, chosen_option, feedback in results:
       mcq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "chosen_option": chosen_option, "feedback": feedback})
-    return RetrieveMCQResponse(topic=topic, mcqs=mcqs, feedbacks=mcq_feedbacks if len(mcq_feedbacks) > 0 else None)
+    result = conn.execute('SELECT num_correct FROM mcq_scores WHERE question_set_id = %s', (question_set_id,)).fetchone()
+    num_correct = result[0] if result is not None else None
+    return RetrieveMCQResponse(topic=topic, mcqs=mcqs, feedbacks=mcq_feedbacks if len(mcq_feedbacks) > 0 else None, num_correct=num_correct)
 
   except Exception as e:
     print("Error in retrieving MCQs")
@@ -355,7 +410,7 @@ def retrieve_saq(question_set_id: str):
     # Retrieve Topic
     topic = conn.execute('SELECT topic FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchone()
     if topic is None:
-      return RetrieveSAQResponse(topic="", saqs=[], feedbacks=None)
+      return RetrieveSAQResponse(topic="", saqs=[], feedbacks=None, total_score=None)
     else:
       topic = topic[0]
     # Retrieve SAQs
@@ -363,11 +418,13 @@ def retrieve_saq(question_set_id: str):
     saqs = []
     for id, question, correct_answer, reason in results:
       saqs.append({"id": id, "question": question, "correct_answer": correct_answer, "reason": reason})
-    results = conn.execute('SELECT question_id, input_answer, feedback FROM saq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT question_id, input_answer, feedback, score FROM saq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
     saq_feedbacks = []
-    for question_id, input_answer, feedback in results:
-      saq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "input_answer": input_answer, "feedback": feedback})
-    return RetrieveSAQResponse(topic=topic, saqs=saqs, feedbacks=saq_feedbacks if len(saq_feedbacks) > 0 else None)
+    for question_id, input_answer, feedback, score in results:
+      saq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "input_answer": input_answer, "feedback": feedback, "score": score})
+    result = conn.execute('SELECT total_score FROM saq_scores WHERE question_set_id = %s', (question_set_id,)).fetchone()
+    total_score = result[0] if result is not None else None
+    return RetrieveSAQResponse(topic=topic, saqs=saqs, feedbacks=saq_feedbacks if len(saq_feedbacks) > 0 else None, total_score=total_score)
 
   except Exception as e:
     print("Error in retrieving SAQs")
@@ -415,6 +472,9 @@ def save_mcq_feedbacks(save_mcq_feedbacks_request: SaveMCQFeedbacksRequest):
     for mcq_feedback in save_mcq_feedbacks_request.mcq_feedbacks:
       conn.execute(f'INSERT INTO mcq_feedback (question_set_id, question_id, chosen_option, feedback) VALUES (%s, %s, %s, %s)', (mcq_feedback.question_set_id, mcq_feedback.question_id, mcq_feedback.chosen_option, mcq_feedback.feedback))
     conn.commit()
+    # Insert MCQ score
+    conn.execute('INSERT INTO mcq_scores (question_set_id, num_questions, num_correct) VALUES (%s, %s, %s)', (save_mcq_feedbacks_request.mcq_feedbacks[0].question_set_id, len(save_mcq_feedbacks_request.mcq_feedbacks), save_mcq_feedbacks_request.num_correct))
+    conn.commit()
     return
 
   except Exception as e:
@@ -433,7 +493,10 @@ def save_saq_feedbacks(save_saq_feedbacks_request: SaveSAQFeedbacksRequest):
     # Insert SAQ feedback data
     print("Inserting SAQ feedbacks")
     for saq_feedback in save_saq_feedbacks_request.saq_feedbacks:
-      conn.execute(f'INSERT INTO saq_feedback (question_set_id, question_id, input_answer, feedback) VALUES (%s, %s, %s, %s)', (saq_feedback.question_set_id, saq_feedback.question_id, saq_feedback.input_answer, saq_feedback.feedback))
+      conn.execute(f'INSERT INTO saq_feedback (question_set_id, question_id, input_answer, feedback, score) VALUES (%s, %s, %s, %s, %s)', (saq_feedback.question_set_id, saq_feedback.question_id, saq_feedback.input_answer, saq_feedback.feedback, saq_feedback.score))
+    conn.commit()
+    # Insert SAQ score
+    conn.execute('INSERT INTO saq_scores (question_set_id, max_score, total_score) VALUES (%s, %s, %s)', (save_saq_feedbacks_request.saq_feedbacks[0].question_set_id, 5*len(save_saq_feedbacks_request.saq_feedbacks), save_saq_feedbacks_request.total_score))
     conn.commit()
     return
 
@@ -500,6 +563,71 @@ def delete_summary(summary_id: int):
     print(e)
     return
   
+
+@app.get("/retrieve_all_topics/")
+def retrieve_all_topics():
+  try:
+    topics = set()
+    # Retrieve MCQ topics
+    results = conn.execute('SELECT DISTINCT topic FROM mcq').fetchall()
+    topics.update([topic[0] for topic in results])
+    # Retrieve SAQ topics
+    results = conn.execute('SELECT DISTINCT topic FROM saq').fetchall()
+    topics.update([topic[0] for topic in results])
+    # Retrieve summary topics
+    results = conn.execute('SELECT topic FROM summary').fetchall()
+    topics.update([topic[0] for topic in results])
+    topics = list(topics)
+    return RetrieveAllTopicsResponse(topics=topics)
+
+  except Exception as e:
+    print("Error in retrieving all topics")
+    print(e)
+    return
+  
+
+@app.get("/retrieve_all_scores/")
+def retrieve_all_scores():
+  try:
+    # Retrieve MCQ scores
+    results = conn.execute('SELECT mcq_scores.question_set_id, distinct_mcq.topic, mcq_scores.num_questions, mcq_scores.num_correct FROM mcq_scores JOIN (SELECT DISTINCT topic, question_set_id FROM mcq) distinct_mcq ON mcq_scores.question_set_id = distinct_mcq.question_set_id').fetchall()
+    mcq_scores = [{"topic": topic, "num_questions": num_questions, "num_correct": num_correct} for question_set_id, topic, num_questions, num_correct in results]
+    # Retrieve SAQ scores
+    results = conn.execute('SELECT saq_scores.question_set_id, distinct_saq.topic, saq_scores.max_score, saq_scores.total_score FROM saq_scores JOIN (SELECT DISTINCT topic, question_set_id FROM saq) distinct_saq ON saq_scores.question_set_id = distinct_saq.question_set_id').fetchall()
+    saq_scores = [{"topic": topic, "max_score": max_score, "total_score": total_score} for question_set_id, topic, max_score, total_score in results]
+    return RetrieveAllScoresResponse(mcq_scores=mcq_scores, saq_scores=saq_scores)
+  
+  except Exception as e:
+    print("Error in retrieving all scores")
+    print(e)
+    return
+  
+
+@app.post("/save_study_plan/")
+def save_study_plan(save_study_plan_request: SaveStudyPlanRequest):
+  try:
+    # Insert study plan data
+    conn.execute(f'INSERT INTO study_plan (timestamp, study_plan) VALUES (%s, %s)', (save_study_plan_request.timestamp, save_study_plan_request.study_plan))
+    return
+
+  except Exception as e:
+    print("Error in saving study plan")
+    print(e)
+    return
+  
+
+@app.get("/retrieve_study_plan/")
+def retrieve_study_plan():
+  try:
+    # Retrieve latest study plan
+    results = conn.execute('SELECT timestamp, study_plan FROM study_plan ORDER BY timestamp DESC LIMIT 1').fetchall()
+    return RetrieveStudyPlanResponse(timestamp=results[0][0] if len(results) > 0 else None, study_plan=results[0][1] if len(results) > 0 else None)
+
+  except Exception as e:
+    print("Error in retrieving study plan")
+    print(e)
+    return
+
   
 @app.post("/save_image_prompt/")
 def save_image_prompt(save_image_prompt_request: SaveImagePromptRequest):

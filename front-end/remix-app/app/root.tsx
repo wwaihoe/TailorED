@@ -64,6 +64,7 @@ export default function App() {
               <Link to="/mcq" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">MCQ</Link>
               <Link to="/saq" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">SAQ</Link>
               <Link to="summarize" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Summarize</Link>
+              <Link to="/studyplan" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Study Plan</Link>
             </div>
             </nav>
           <Outlet />
