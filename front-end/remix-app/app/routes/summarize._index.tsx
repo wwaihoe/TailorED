@@ -77,16 +77,16 @@ export default function Summarize() {
   
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+      <header className="flex w-full h-[10vh] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
         <h1 className="text-4xl font-extrabold m-auto text-transparent">Summarize</h1>
       </header>
-      <main className="flex flex-col justify-center content-center items-center h-[90%] w-[90%] m-5 gap-6">
-        <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-full w-full p-4">
-          <p className="text-xl font-bold mb-4">
-            Choose a topic to view generated summary
+      <main className="flex flex-col justify-center content-center items-center h-[90vh] w-[90%] gap-6">
+        <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-[75vh] w-full p-4">
+          <p className="text-xl font-bold mb-4 flex justify-center">
+            Choose a topic to view the generated summary
           </p>
-          <div className="grid grid-cols-3 grid-rows-4 gap-4 w-full h-full">
-            {topics.map((topic) => <TopicObj key={topic.id} id={topic.id} topic={topic.topic} route={`/summarize/${topic.id}`} image_prompt={topic.image_prompt}/>)}
+          <div className="grid grid-cols-3 gap-4 w-full h-[95%] overflow-y-auto">
+            {topics.map((topic) => <TopicObj key={topic.id} id={topic.id} topic={topic.topic} route={`/summarize/${topic.id}`} image_prompt={topic.image_prompt} />)}
           </div>
         </div>
         <Link to={"/summarize/create/fileupload"} className="px-6 py-3 mb-3 bg-blue-400 rounded-xl border-2 border-zinc-300 text-xl text-white hover:bg-blue-500 hover:border-black focus:outline-none focus:ring focus:ring-blue-300">
@@ -102,7 +102,7 @@ function TopicObj({ id, topic, route, image_prompt }: TopicObj) {
   const isSubmitting = fetcher.state !== "idle";
 
   return (
-    <div className="w-full h-full relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
+    <div className="w-full h-60 relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
       {isSubmitting ? 
       <div>
         <button className="w-full h-full relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
@@ -144,3 +144,57 @@ function TopicObj({ id, topic, route, image_prompt }: TopicObj) {
     </div>
   );
 }
+
+
+const test_topic_data = [
+  {
+    id: 1,
+    topic: "Test Topic 1",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 2,
+    topic: "Test Topic 2",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 3,
+    topic: "Test Topic 3",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 4,
+    topic: "Test Topic 4",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 5,
+    topic: "Test Topic 5",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 6,
+    topic: "Test Topic 6",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 7,
+    topic: "Test Topic 7",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 8,
+    topic: "Test Topic 8",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 9,
+    topic: "Test Topic 9",
+    image_prompt: "Nothing",
+  },
+  {
+    id: 10,
+    topic: "Test Topic 10",
+    image_prompt: "Nothing",
+  },
+]

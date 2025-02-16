@@ -96,10 +96,10 @@ export default function fileUpload() {
 
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+      <header className="flex w-full h-[10vh] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
         <h1 className="text-4xl font-extrabold m-auto text-transparent">Chat</h1>
       </header>
-      <main className="flex flex-row w-full h-[90%] bg-zinc-900">
+      <main className="flex flex-row w-full h-[90vh] bg-zinc-900">
         <Outlet/>
         <div className="w-[22.5%] flex flex-col bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
           

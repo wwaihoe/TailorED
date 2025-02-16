@@ -78,15 +78,15 @@ export default function MCQ() {
   
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
-      <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
+      <header className="flex w-full h-[10vh] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
         <h1 className="text-4xl font-extrabold m-auto text-transparent">MCQ Practice</h1>
       </header>
-      <main className="flex flex-col justify-center content-center items-center h-[90%] w-[90%] m-5 gap-6">
-        <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-full w-full p-4">
-          <p className="text-xl font-bold mb-4">
+      <main className="flex flex-col justify-center content-center items-center h-[90vh] w-[90%] gap-6">
+        <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-[75vh] w-full p-4">
+          <p className="text-xl font-bold mb-4 flex justify-center">
             Choose a topic to practice MCQs
           </p>
-          <div className="grid grid-cols-3 grid-rows-4 gap-4 w-full h-full">
+          <div className="grid grid-cols-3 gap-4 w-full h-[95%] overflow-y-auto">
             {topics.map((topic) => <TopicObj key={topic.question_set_id} question_set_id={topic.question_set_id} topic={topic.topic} route={`/mcq/${topic.question_set_id}`} image_prompt={topic.image_prompt} />)}
           </div>
         </div>
@@ -103,7 +103,7 @@ function TopicObj({ question_set_id, topic, route, image_prompt }: TopicObj) {
   const isSubmitting = fetcher.state !== "idle";
 
   return (
-    <div className="w-full h-full relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
+    <div className="w-full h-60 relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
       {isSubmitting ? 
       <div>
         <button className="w-full h-full relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">

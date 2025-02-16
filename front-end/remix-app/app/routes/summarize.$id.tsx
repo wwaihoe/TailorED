@@ -56,7 +56,7 @@ export default function Summary() {
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
           <div className="w-screen max-w-5xl h-full flex justify-center">
-            <div className="prose prose-zinc dark:prose-invert lg:prose-xl">
+            <div className="prose prose-zinc dark:prose-invert prose-base">
               <Markdown options={{ wrapper: 'article' }}>
               {data.summary}
               </Markdown>
