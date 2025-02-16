@@ -20,9 +20,10 @@ class LlamaCPP():
     self.model_name = model_name
     defaults = {
       "max_tokens": 7000,
-      "temperature": 0.3,
-      "top_p": 0.3,
+      "temperature": 0.7,
+      "top_p": 0.8,
       "top_k": 0,
+      "repeat_penalty": 1.05,
     }
     defaults.update(kwargs)
     self.args = defaults
@@ -96,9 +97,10 @@ class LlamaCPPPython():
 
     defaults = {
       "max_tokens": 7000,
-      "temperature": 0.3,
-      "top_p": 0.3,
+      "temperature": 0.7,
+      "top_p": 0.8,
       "top_k": 0,
+      "repeat_penalty": 1.05,
     }
     defaults.update(kwargs)
     self.args = defaults
