@@ -78,7 +78,7 @@ class QuestionGenerator:
       generatemcq_system_prompt = f"""Create assignment questions in multiple choice question (MCQ) format with 4 options for each question. \
 Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct option is accurate and well-supported by the content and the wrong options are plausible but incorrect. \
-Think carefully about the reasoning behind each option and provide a clear and concise reason for the correct option. \
+Provide a clear and concise reason for the correct option. \
 Keep the reasons for the correct option to a maximum of THREE sentences each.** Brevity is key. \
 Do not duplicate questions. 
 Strictly return the questions with this json schema only: {json.dumps(MCQs.model_json_schema())}
@@ -114,7 +114,7 @@ Refer to the example below for the correct format:
 <content>{context}</content>
 
 Based on the content, create multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-**Ensure that all reasons are concise and do not exceed THREE sentences each.**
+**STRICTLY ensure that all reasons are concise and do not exceed THREE sentences each no matter what.**
 Follow the json schema provided closely for the correct format.
 Multiple Choice Questions (MCQs): """
       while num_retries > 0:
@@ -174,7 +174,7 @@ Multiple Choice Questions (MCQs): """
       generatesaq_system_prompt = f"""Create assignment questions in short answer question (SAQ) format. \
 Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct answer is accurate and well-supported by the content. \
-Think carefully about the key points that should be included in the answer and provide a clear and concise reason for the correct answer. \
+Provide a clear and concise reason for the correct answer. \
 Keep the reasons for the correct answer and the correct answers to a maximum of THREE sentences each.** Brevity is key. \
 Do not duplicate questions. 
 Strictly return the questions with this json schema only: {json.dumps(SAQs.model_json_schema())}
@@ -200,7 +200,7 @@ Refer to the example below for the correct format. Note the length of the answer
 <content>{context}</content>
 
 Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-**Ensure that all answers and reasons are concise and do not exceed THREE sentences each.**
+**STRICTLY ensure that all answers and reasons are concise and do not exceed THREE sentences each no matter what.**
 Follow the json schema provided closely for the correct format.
 Short Answer Questions (SAQ): """
       while num_retries > 0:
@@ -445,18 +445,19 @@ Key Topics: """
       messages = [{"role": "system", "content": combinetopics_system_prompt}, {"role": "user", "content": combinetopics_prompt_template}]
       final_topics = self.llm.chat_generate(messages)
 
-      studyplangenerator_system_prompt = """You are an expert educational consultant tasked with creating a highly personalized and actionable study plan for a student. \
-Your goal is to provide a detailed plan that addresses the student's specific needs, covering key topics and areas for improvement while recommending topics for further study. \
-Analyze the key topics in the student's curriculum, the topics they have been working on, and their assessment scores. \
-Think about the student's strengths and weaknesses, and tailor the study plan to help them achieve their learning goals. \
-Provide a structured plan with clear objectives, resources, and activities to guide the student's learning process. \
+      studyplangenerator_system_prompt = """You are an expert educational consultant tasked with creating a highly personalized and actionable study plan for me, a student. \
+Your goal is to provide a detailed plan that addresses the my specific needs as a student, covering key topics and areas for improvement while recommending topics for further study. \
+Analyze the key topics in my curriculum, the topics I have been working on and my assessment scores on practice questions. \
+Think about the my strengths and weaknesses, and tailor the study plan to help me achieve my learning goals. \
+Provide a structured plan with clear objectives, topics to cover, resources, and activities to guide my learning process. \
 Also include specific recommendations for improving performance in the identified areas of weakness, and building on existing strengths. \
-Format your response in a clear and organized manner, ensuring that the study plan is easy to follow and implement."""
-      studyplangenerator_prompt_template = f"""Create a study plan for the student based on the following key topics in the student's curriculum, topics that they have been working on and their assessment scores:
+Format your response in a clear and organized manner, ensuring that the study plan is easy to follow and implement. \
+The study plan should include the key topics in the curriculum, the topics I am working on, my strengths and weaknesses based on my assessment scores, and detailed recommendations for further study."""
+      studyplangenerator_prompt_template = f"""Create a study plan for me, a student, based on the following key topics in my curriculum, topics that I have been working on and my assessment scores on practice questions:
 
 <key_topics_in_curriculum>{final_topics}</key_topics_in_curriculum>      
 
-<topics_student_is_working_on>{", ".join(topics)}</topics_student_is_working_on>
+<topics_I_am_working_on>{", ".join(topics)}</topics_I_am_working_on>
 
 <mcq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['num_correct']}/{score['num_questions']}}}" for score in mcq_scores])}</mcq_scores>
 
