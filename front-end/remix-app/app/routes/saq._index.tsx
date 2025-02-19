@@ -108,7 +108,7 @@ function TopicObj({ question_set_id, topic, route, image_prompt }: TopicObj) {
       <div>
         <button className="w-full h-full relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
           <img 
-          src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
+          src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=512&model=flux&seed=23&nologo=true&private=true`} 
           alt={topic}
           className="absolute inset-0 w-full h-full object-cover rounded-xl brightness-50"
           />
@@ -125,7 +125,7 @@ function TopicObj({ question_set_id, topic, route, image_prompt }: TopicObj) {
       <div className="hover:bg-zinc-900 hover:text-blue-400 hover:border-zinc-300 ">
         <Link to={route ? route : "/"} className="p-3">
           <img 
-          src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=376&model=flux&seed=23&nologo=true&private=true`} 
+          src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=512&model=flux&seed=23&nologo=true&private=true`} 
           alt={topic}
           className="absolute inset-0 w-full h-full object-cover rounded-xl brightness-75"
           />
