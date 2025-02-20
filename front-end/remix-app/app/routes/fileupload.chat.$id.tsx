@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useLoaderData, useFetcher } from "@remix-run/react";
+import { useParams, useLoaderData, useFetcher, Link } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import Markdown from 'markdown-to-jsx'
 import type { MetaFunction } from "@remix-run/node";
+import { v4 as uuidv4 } from 'uuid';
 
 
 export const meta: MetaFunction = () => {
@@ -204,8 +205,13 @@ export default function Chat() {
         </div>}
         <div ref={bottomRef} className="h-28 select-none"></div>
       </div>
-      <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row absolute bottom-0 justify-center">
-        <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3">
+      <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row gap-3 absolute bottom-0 justify-center">
+        <Link to={`/fileupload/chat/${uuidv4()}`} reloadDocument className="p-3 rounded-md text-white hover:bg-zinc-600 hover:text-blue-500 focus:outline-none focus:ring focus:ring-white select-none">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </Link>
+        <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3 select-none">
           {!isSubmitting ? 
           <input
             type="text"
@@ -229,12 +235,16 @@ export default function Chat() {
           <button type="submit"
             className="px-6 py-3 bg-blue-400 rounded-md text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-white"
           >
-            Send
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+            </svg>
           </button> :
           <button disabled 
           className="px-6 py-3 bg-gray-700 rounded-md text-white"
           >
-            Send
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+            </svg>
           </button>
           }
         </fetcher.Form>            
