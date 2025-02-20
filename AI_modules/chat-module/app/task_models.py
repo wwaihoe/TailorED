@@ -62,7 +62,6 @@ class QuestionGenerator:
   # MCQ
   def generate_mcq(self, topic: str, difficulty: Difficulty):
     num_retries = 3
-    num_retries = 3
     try:
       difficulty_str = difficulty.name
       res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic})
@@ -449,7 +448,7 @@ Key Topics: """
 Your goal is to provide a detailed plan that addresses the my specific needs as a student, covering key topics and areas for improvement while recommending topics for further study. \
 Analyze the key topics in my curriculum, the topics I have been working on and my assessment scores on practice questions. \
 Think about the my strengths and weaknesses, and tailor the study plan to help me achieve my learning goals. \
-Provide a structured plan with clear objectives, topics to cover, resources, and activities to guide my learning process. \
+Provide a structured plan with clear objectives, topics to cover, and activities to guide my learning process. \
 Also include specific recommendations for improving performance in the identified areas of weakness, and building on existing strengths. \
 Format your response in a clear and organized manner, ensuring that the study plan is easy to follow and implement. \
 The study plan should include the key topics in the curriculum, the topics I am working on, my strengths and weaknesses based on my assessment scores, and detailed recommendations for further study."""
