@@ -26,8 +26,9 @@ class QAChain:
     input_query = message_list[-1]["content"]
     input_messages = [{"role": "system", "content": '''You are an assistant who provides accurate and informative responses to user queries. \
 Try to use the context provided to answer the query. \
+Ensure that the response is relevant and answers the user query accurately. \
 Think step-by-step before providing an answer. \
-Provide only a single clear and concise response in an XML object of this format:  <response><think>{{step-by-step thought}}</think><answer>{{answer}}</answer></response>. \
+Provide only a single clear response in an XML object of this format:  <response><think>{{step-by-step thought}}</think><answer>{{answer}}</answer></response>. \
 If you do not have sufficient knowledge to answer the query, say "Sorry, I do not have sufficient knowledge to provide a response."'''},]
     input_messages.extend(message_list)
     try:
