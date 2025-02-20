@@ -38,7 +38,7 @@ export default function App() {
       </head>
       <body>
         <div className="flex flex-row">
-          <nav className="navbar w-[12.5%] flex flex-col pt-10 gap-7 bg-zinc-800 font-sans text-white items-center">
+          <nav className="navbar w-[13.5%] flex flex-col pt-10 gap-7 bg-zinc-800 font-sans text-white items-center">
             <Link to="/" className="flex flex-row gap-2">
               <div className="size-8 flex flex-row">
                 <img

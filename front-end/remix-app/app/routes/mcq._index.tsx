@@ -86,7 +86,7 @@ export default function MCQ() {
           <p className="text-xl font-bold mb-4 flex justify-center">
             Choose a topic to practice MCQs
           </p>
-          <div className="grid grid-cols-3 gap-4 w-full h-[95%] overflow-y-auto">
+          <div className="grid grid-cols-3 gap-4 w-full h-[95%] overflow-y-auto content-start">
             {topics.map((topic) => <TopicObj key={topic.question_set_id} question_set_id={topic.question_set_id} topic={topic.topic} route={`/mcq/${topic.question_set_id}`} image_prompt={topic.image_prompt} />)}
           </div>
         </div>

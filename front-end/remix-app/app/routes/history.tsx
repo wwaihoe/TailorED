@@ -72,13 +72,13 @@ export default function History() {
 
   return (
     <div className="flex flex-col w-screen h-screen items-center bg-zinc-900">
-      <main className="flex flex-col items-center gap-10">
+      <main className="flex flex-col items-center gap-10 h-full">
         <header className="bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
           <h1 className="m-auto mt-20 text-3xl font-bold text-transparent">
             Jump back into a previous chat
           </h1>
         </header>
-        <div className="flex flex-col max-w-7xl w-full mb-20 gap-4 h-fit overflow-y-auto">
+        <div className="flex flex-col max-w-7xl w-full mb-20 gap-4 overflow-y-auto">
           {chats.map((chat) => <Chat key={chat.chatId} chatId={chat.chatId} timestamp={chat.timestamp} role={chat.role} content={chat.content} />)}
         </div>
       </main>
