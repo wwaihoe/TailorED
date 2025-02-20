@@ -191,10 +191,18 @@ export default function Chat() {
                   : "bg-gray-700"
               }`}
             >
-              <div className="prose prose-zinc dark:prose-invert prose-base text-white">
-                <Markdown options={{ wrapper: 'article' }}>
-                {msg.content}
-                </Markdown>
+              <div className="flex flex-col gap-2">
+                <div className="prose prose-zinc dark:prose-invert prose-base text-white">
+                  <Markdown options={{ wrapper: 'article' }}>
+                  {msg.content}
+                  </Markdown>
+                </div>
+                {msg.role === "assistant" && msg.content !== "Failed to generate response." && 
+                  <button onClick={() => navigator.clipboard.writeText(msg.content)} className="w-fit p-1 bg-gray-700 border-t border-zinc-700 hover:bg-zinc-600 hover:text-white rounded-md focus:outline-none focus:ring focus:ring-white select-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                    </svg>
+                  </button>}
               </div>
               
             </div>
@@ -206,7 +214,7 @@ export default function Chat() {
         <div ref={bottomRef} className="h-28 select-none"></div>
       </div>
       <div className="p-4 self-center w-full max-w-[50%] bg-zinc-800 border-t border-zinc-700 rounded-lg flex flex-row gap-3 absolute bottom-0 justify-center">
-        <Link to={`/fileupload/chat/${uuidv4()}`} reloadDocument className="p-3 rounded-md text-white hover:bg-zinc-600 hover:text-blue-500 focus:outline-none focus:ring focus:ring-white select-none">
+        <Link to={`/fileupload/chat/${uuidv4()}`} reloadDocument className="p-3 rounded-md text-white hover:bg-zinc-600 hover:text-white focus:outline-none focus:ring focus:ring-white select-none">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
