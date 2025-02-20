@@ -23,6 +23,7 @@ CMD ["npm", "start"]
 FROM node:22-alpine as development
 
 EXPOSE 3000
+EXPOSE 24678
 
 # Set working directory
 WORKDIR /app/remix-app
@@ -34,10 +35,6 @@ RUN npm install
 
 # Install additional dev dependencies for hot reloading
 RUN npm install nodemon ts-node
-
-# Expose Remix's default port
-EXPOSE 3000
-EXPOSE 24678
 
 # Command to start the app in development mode
 CMD ["npm", "run", "start:dev"]
