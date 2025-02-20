@@ -18,12 +18,14 @@
     "cross-env": "^7.0.3",
     "express": "^4.21.1",
     "isbot": "^4.1.0",
+    "markdown-to-jsx": "^7.7.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.15.0",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
