@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from chat_models import qa_chain_model, llm
 from task_models import question_generator_model, answer_evaluator_model, summarizer, study_plan_generator, image_prompt_generator
@@ -138,9 +138,7 @@ def get_response(chat_request: ChatRequest):
   chat_response = qa_chain_model.generate(chat_request.messages)
   # save response to database
   try:
-    # convert timestamp to string
-    timestamp_str = chat_request.timestamp.isoformat()
-    body = {"chat_id": chat_request.chat_id, "timestamp": timestamp_str, "role": "assistant", "content": chat_response["content"]["answer"]}
+    body = {"chat_id": chat_request.chat_id, "timestamp": datetime.now(timezone.utc).isoformat(), "role": "assistant", "content": chat_response["content"]["answer"]}
     response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_message/", json=body)
     if not response.ok:
       print("Error in saving chat response")
