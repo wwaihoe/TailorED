@@ -25,7 +25,7 @@ export default function Index() {
               Welcome to <span className="sr-only">TailorED</span>
           </h1>
           <div className="items-start">
-            <div className="size-20 flex flex-row items-center">
+            <div className="size-24 flex flex-row items-center">
               <img
                 src="/logo.png"
                 alt="TailorED"

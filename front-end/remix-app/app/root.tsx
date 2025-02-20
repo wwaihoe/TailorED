@@ -1,12 +1,4 @@
-import {
-  Links,
-  Link, 
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-  MetaFunction,
-} from "@remix-run/react";
+import { Links, Link, Meta,  Outlet, Scripts, ScrollRestoration, MetaFunction } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -47,7 +39,14 @@ export default function App() {
       <body>
         <div className="flex flex-row">
           <nav className="navbar w-[12.5%] flex flex-col pt-10 gap-7 bg-zinc-800 font-sans text-white items-center">
-            <Link to="/">
+            <Link to="/" className="flex flex-row gap-2">
+              <div className="size-8 flex flex-row">
+                <img
+                  src="/favicon.png"
+                  alt="TailorED"
+                  className="block w-full object-cover"
+                />
+              </div>
               <div className="flex flex-row select-none">
                 <p className="text-3xl font-light text-white">
                   Tailor
@@ -58,13 +57,13 @@ export default function App() {
               </div>
             </Link>
             <div className="flex flex-col items-center">
-              <Link to="/about" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">About</Link>
-              <Link to={`/fileupload/chat/${uuidv4()}`} className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Chat</Link>
-              <Link to="/history" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Chat History</Link>
-              <Link to="/mcq" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">MCQ</Link>
-              <Link to="/saq" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">SAQ</Link>
-              <Link to="summarize" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Summarize</Link>
-              <Link to="/studyplan" className="w-fit text-lg text-center font-semibold hover:text-blue-400 p-3 rounded-xl">Study Plan</Link>
+              <Link to="/about" className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">About</Link>
+              <Link to={`/fileupload/chat/${uuidv4()}`} className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">Chat</Link>
+              <Link to="/history" className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">Chat History</Link>
+              <Link to="/mcq" className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">MCQ</Link>
+              <Link to="/saq" className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">SAQ</Link>
+              <Link to="summarize" className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">Summarize</Link>
+              <Link to="/studyplan" className="w-fit text-lg text-center font-semibold hover:text-red-300 p-3 rounded-xl">Study Plan</Link>
             </div>
             </nav>
           <Outlet />
