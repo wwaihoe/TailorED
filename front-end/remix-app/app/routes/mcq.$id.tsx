@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useLoaderData, useParams, useFetcher } from "@remix-run/react";
 import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
@@ -135,6 +135,11 @@ export default function MCQ() {
     }
   };
 
+  useEffect(() => {
+    if (fetcher.data) {
+      setShowFeedback(true);
+    }
+  }, [fetcher.data]);
   
 
   return (
@@ -146,16 +151,16 @@ export default function MCQ() {
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
           <div className="w-screen max-w-5xl h-full">
-            {data.feedbacks && 
+            {(fetcher.data || data.feedbacks) && 
             <div className="flex justify-center mb-4">
               <button onClick = {() => setShowFeedback(!showFeedback)} className="p-2 bg-blue-400 text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400 rounded-lg text-md">
                 {showFeedback? "Hide Feedback" : "Show Previously Submitted Response"}
               </button>
             </div>}
-            {showFeedback?
+            {showFeedback ? (
             <div className="mb-10 overflow-y-auto">
               <div className="flex justify-center mb-4">
-                <p className="font-bold">Score: {data.num_correct}/{data.mcqs.length}</p>
+                <p className="font-bold">Score: {fetcher.data ? fetcher.data.num_correct : data.num_correct}/{data.mcqs.length}</p>              
               </div>
               {data.mcqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
@@ -164,34 +169,51 @@ export default function MCQ() {
                     <ul className="list-inside">
                       <div className="flex flex-row justify-between">
                         <li key={0}>{(10).toString(36).toLowerCase()}. {question.option_a}</li>
-                        <input disabled type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "a"}/>
+                        <input disabled type="radio" id={(index*4+0).toString()} name={`mcq-${index}`} value={(10).toString(36).toLowerCase()} checked={data.feedbacks ? data.feedbacks?.[index]?.chosen_option === "a" : (fetcher.data ? fetcher.data.responses[index]?.chosen_option === "a" : false)}/>
                       </div>
                       <div className="flex flex-row justify-between">
                         <li key={1}>{(11).toString(36).toLowerCase()}. {question.option_b}</li>
-                        <input disabled type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "b"}/>
+                        <input disabled type="radio" id={(index*4+1).toString()} name={`mcq-${index}`} value={(11).toString(36).toLowerCase()} checked={data.feedbacks ? data.feedbacks?.[index]?.chosen_option === "b" : (fetcher.data ? fetcher.data.responses[index]?.chosen_option === "b" : false)}/>
                       </div>
                       <div className="flex flex-row justify-between">
                         <li key={2}>{(12).toString(36).toLowerCase()}. {question.option_c}</li>
-                        <input disabled type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "c"}/>
+                        <input disabled type="radio" id={(index*4+2).toString()} name={`mcq-${index}`} value={(12).toString(36).toLowerCase()} checked={data.feedbacks ? data.feedbacks?.[index]?.chosen_option === "c" : (fetcher.data ? fetcher.data.responses[index]?.chosen_option === "c" : false)}/>
                       </div>
                       <div className="flex flex-row justify-between">
                         <li key={3}>{(13).toString(36).toLowerCase()}. {question.option_d}</li>
-                        <input disabled type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()} checked={data.feedbacks?.[index]?.chosen_option === "d"}/>
+                        <input disabled type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()} checked={data.feedbacks ? data.feedbacks?.[index]?.chosen_option === "d" : (fetcher.data ? fetcher.data.responses[index]?.chosen_option === "d" : false)}/>
                       </div>
                     </ul>
                     <div className="mt-4 flex flex-col gap-1.5">
-                      {data.feedbacks?.[index]?.chosen_option === question.correct_option?
-                      <p className="font-bold text-green-400">
-                        Chosen Option: {data.feedbacks[index].chosen_option}
-                      </p>:
-                      <div>
-                        <p className="font-bold text-red-400">
-                          Chosen Option: {data.feedbacks?.[index].chosen_option}
-                        </p>
-                        <p className="font-bold">
-                          Correct Option: {question.correct_option}
-                        </p>
-                      </div>}
+                      {fetcher.data ? (
+                        fetcher.data.responses[index]?.chosen_option === question.correct_option?
+                        <p className="font-bold text-green-400">
+                          Chosen Option: {fetcher.data?.responses[index].chosen_option}
+                        </p>:
+                        <div>
+                          <p className="font-bold text-red-400">
+                            Chosen Option: {fetcher.data?.responses[index].chosen_option}
+                          </p>
+                          <p className="font-bold">
+                            Correct Option: {question.correct_option}
+                          </p>
+                        </div>
+                      ) : (
+                        data.feedbacks?.[index]?.chosen_option === question.correct_option ? (
+                          <p className="font-bold text-green-400">
+                            Chosen Option: {data.feedbacks[index].chosen_option}
+                          </p>
+                        ) : (
+                          <div>
+                            <p className="font-bold text-red-400">
+                              Chosen Option: {data.feedbacks?.[index].chosen_option}
+                            </p>
+                            <p className="font-bold">
+                              Correct Option: {question.correct_option}
+                            </p>
+                          </div>
+                        )
+                      )}   
                       <div>
                         <p className="font-bold">
                           Explanation: 
@@ -205,7 +227,7 @@ export default function MCQ() {
                           Feedback: 
                         </p>
                         <p>
-                          {data.feedbacks?.[index].feedback}
+                          {fetcher.data ? fetcher.data.responses[index].feedback : data.feedbacks?.[index].feedback}
                         </p>
                       </div>
                     </div>
@@ -213,12 +235,8 @@ export default function MCQ() {
                 </div>
               ))}
             </div>
-            :
+            ) : (
             <fetcher.Form method="post" ref={formRef} onSubmit={handleSubmit} className="mb-10 overflow-y-auto">
-              {fetcher.data && 
-              <div className="flex justify-center mb-4">
-                <p className="font-bold">Score: {fetcher.data.num_correct}/{data.mcqs.length}</p>
-              </div>}
               {data.mcqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
@@ -241,37 +259,6 @@ export default function MCQ() {
                         <input disabled={isSubmitting} type="radio" id={(index*4+3).toString()} name={`mcq-${index}`} value={(13).toString(36).toLowerCase()} required/>
                       </div>
                     </ul>
-                    {fetcher.data? <div className="mt-4 flex flex-col gap-1.5">
-                      {fetcher.data.responses[index].chosen_option === question.correct_option?
-                        <p className="font-bold text-green-400">
-                          Chosen Option: {fetcher.data.responses[index].chosen_option}
-                        </p>:
-                        <div>
-                        <p className="font-bold text-red-400">
-                          Chosen Option: {fetcher.data.responses[index].chosen_option}
-                        </p>
-                        <p className="font-bold">
-                          Correct Option: {question.correct_option}
-                        </p>
-                      </div>}
-                      <div>
-                        <p className="font-bold">
-                          Explanation: 
-                        </p>
-                        <p>
-                          {question.reason}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-bold">
-                          Feedback: 
-                        </p>
-                        <p>
-                          {(fetcher.data.responses as any)[index].feedback}
-                        </p>
-                      </div>
-                    </div>: 
-                    null}
                   </div>
                 </div>
               ))}
@@ -292,7 +279,7 @@ export default function MCQ() {
                 </span>
               </div>}
             </fetcher.Form>
-            }
+            )}
           </div>
         </main>
     </div>

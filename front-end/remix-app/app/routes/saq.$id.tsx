@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useLoaderData, useParams, useFetcher } from "@remix-run/react";
 import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
@@ -135,6 +135,11 @@ export default function SAQ() {
     }
   };
 
+  useEffect(() => {
+      if (fetcher.data) {
+        setShowFeedback(true);
+      }
+    }, [fetcher.data]);
   
 
   return (
@@ -146,26 +151,29 @@ export default function SAQ() {
 
         <main className="flex flex-col w-full h-[90%] items-center justify-center overflow-y-auto p-6 bg-zinc-900">
           <div className="w-screen max-w-5xl h-full">
-            {data.feedbacks && 
-              <div className="flex justify-center mb-4">
-                <button onClick = {() => setShowFeedback(!showFeedback)} className="p-2 bg-blue-400 text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400 rounded-lg text-md">
-                  {showFeedback? "Hide Feedback" : "Show Previously Submitted Response"}
-                </button>
+            {(fetcher.data || data.feedbacks) && 
+            <div className="flex justify-center mb-4">
+              <button onClick = {() => setShowFeedback(!showFeedback)} className="p-2 bg-blue-400 text-white hover:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-400 rounded-lg text-md">
+                {showFeedback? "Hide Feedback" : "Show Previously Submitted Response"}
+              </button>
             </div>}
             {showFeedback ?
             <div className="mb-10 overflow-y-auto">
               <div className="flex justify-center mb-4">
-                <p className="font-bold">Score: {data.total_score}/{5*data.saqs.length}</p>
+                <p className="font-bold">Score: {fetcher.data ? fetcher.data.total_score : data.total_score}/{5*data.saqs.length}</p>
               </div>
               {data.saqs.map((question, index) => (
                 <div key={index} className="mb-4 flex justify-center">
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
-                    <textarea rows={3} value={data.feedbacks[index].input_answer} disabled name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
+                    <textarea rows={3} value={fetcher.data ? fetcher.data.responses[index].input_answer : data.feedbacks[index].input_answer} disabled name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."/>
                     <div className="mt-4 flex flex-col gap-1.5">
                       <div>
                         <p className="font-bold">
-                          Correct Answer: {question.correct_answer}
+                          Correct Answer: 
+                        </p>
+                        <p className="font-bold">
+                          {question.correct_answer}
                         </p>
                       </div>
                       <div>
@@ -181,11 +189,11 @@ export default function SAQ() {
                           Feedback: 
                         </p>
                         <p>
-                          {data.feedbacks[index].feedback}
+                          {fetcher.data ? fetcher.data.responses[index].feedback : data.feedbacks[index].feedback}
                         </p>
                       </div>
                       <p className="font-bold">
-                        Score: {data.feedbacks[index].score}/5
+                        Score: {fetcher.data ? fetcher.data.responses[index].score : data.feedbacks[index].score}/5
                       </p>
                     </div>
                   </div>
@@ -202,33 +210,6 @@ export default function SAQ() {
                   <div className="w-full max-w-screen-md pl-4 pr-10 py-4 rounded-md bg-zinc-700 text-white">
                     {question.question}
                     <textarea rows={3} required disabled={isSubmitting} name={`saq-${index}`} className="w-full mt-3 bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400" placeholder="Type your answer here..."></textarea>
-                    {fetcher.data? <div className="mt-4 flex flex-col gap-1.5">
-                      <div>
-                        <p className="font-bold">
-                          Correct Answer: {question.correct_answer}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-bold">
-                          Explanation: 
-                        </p>
-                        <p>
-                          {question.reason}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-bold">
-                          Feedback: 
-                        </p>
-                        <p>
-                          {(fetcher.data.responses as any)[index].feedback}
-                        </p>
-                      </div>
-                      <p className="font-bold">
-                        Score: {(fetcher.data.responses as any)[index].score}/5
-                      </p>
-                    </div>: 
-                    null}
                   </div>
                 </div>
               ))}
