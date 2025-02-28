@@ -74,7 +74,7 @@ class QuestionGenerator:
       else:
         context += "None"
       filenames = res_json["filenames"]
-      generatemcq_system_prompt = f"""Create assignment questions in multiple choice question (MCQ) format with 4 options for each question. \
+      generatemcq_system_prompt = f"""Create a few assignment questions in multiple choice question (MCQ) format with 4 options for each question. \
 Create only questions that are clear, concise, and relevant to the topic using information from the content. \
 Ensure that the correct option is accurate and well-supported by the content and the wrong options are plausible but incorrect. \
 Provide a clear and concise reason for the correct option. \
@@ -112,7 +112,7 @@ Refer to the example below for the correct format:
       generatemcq_prompt_template = f"""Refer to the following content:
 <content>{context}</content>
 
-Based on the content, create multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+Based on the content, create a few multiple choice questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
 **STRICTLY ensure that all reasons are concise and do not exceed THREE sentences each no matter what.**
 Follow the json schema provided closely for the correct format.
 Multiple Choice Questions (MCQs): """
@@ -170,11 +170,11 @@ Multiple Choice Questions (MCQs): """
       else:
         context += "None"
       filenames = res_json["filenames"]
-      generatesaq_system_prompt = f"""Create assignment questions in short answer question (SAQ) format. \
-Create only questions that are clear, concise, and relevant to the topic using information from the content. \
-Ensure that the correct answer is accurate and well-supported by the content. \
-Provide a clear and concise reason for the correct answer. \
-Keep the reasons for the correct answer and the correct answers to a maximum of THREE sentences each.** Brevity is key. \
+      generatesaq_system_prompt = f"""Create a few assignment questions in short answer question (SAQ) format. \
+Create only single short answer questions that are clear, concise, and relevant to the topic using information from the content. \
+Ensure that the correct answer answers the question fully and is accurate and well-supported by the content. \
+Provide a short, clear and concise reason for the correct answer. \
+Keep the reasons for the correct answers and the correct answers to a maximum of THREE sentences each.** Brevity is key. \
 Do not duplicate questions. 
 Strictly return the questions with this json schema only: {json.dumps(SAQs.model_json_schema())}
 
@@ -198,8 +198,8 @@ Refer to the example below for the correct format. Note the length of the answer
       generatesaq_prompt_template = f"""Refer to the following content:
 <content>{context}</content>
 
-Based on the content, create short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
-**STRICTLY ensure that all answers and reasons are concise and do not exceed THREE sentences each no matter what.**
+Based on the content, create a few short answer questions related to this topic: {topic}, with a difficulty level of {difficulty_str}.
+**STRICTLY ensure that all answers and reasons for the correct answers are short and concise and do not exceed THREE sentences each no matter what.**
 Follow the json schema provided closely for the correct format.
 Short Answer Questions (SAQ): """
       while num_retries > 0:
@@ -289,23 +289,23 @@ Feedback: <response>"""
     additional_info_prompt = "Also offer additional information or clarifications in helping to understand the topic."
     try:
       # Generate feedback
-      evaluatesaq_system_prompt = f"""You are an expert in the subject, evaluate the answer to a given question. \
+      evaluatesaq_system_prompt = f"""You are an expert in the subject, evaluate the input answer to a given question. \
 Evaluate the input answer for a short answer question. Read the question, correct answer and input answer carefully. \
 Then, provide constructive feedback on the input answer. \
-Your constructive feedback should highlight any inaccuracies or areas of understanding which may need improvement. Otherwise, provide positive feedback. \
+Your constructive feedback should highlight inaccuracies or areas of understanding which may need improvement if they exist. Otherwise, if the input answer is correct, provide positive feedback. \
 {additional_info_prompt if additional_info == True else ""} \
 Do not mention the exact correct answer in your feedback. \
 Give your answer in full sentences. \
 Think step-by-step before providing feedback. \
 Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><feedback>{{feedback}}</feedback></response>."""
-      evaluatesaq_prompt_template = f"""Evaluate the input answer for the following short answer question. Read the question, correct answer, reason and input answer carefully. \
+      evaluatesaq_prompt_template = f"""Evaluate the input answer for the following short answer question with respect to the correct answer. Read the question, correct answer, reason and input answer carefully. \
 
 <question>{saq.question}</question>
 <correct_answer>{saq.correct_answer}</correct_answer>
 <reason>{saq.reason}</reason>
 <input_answer>{input_answer}</input_answer>
 
-Think step-by-step before providing feedback: <response>"""
+Think step-by-step before providing feedback for the input answer: <response>"""
       while num_retries > 0:
         messages = [{"role": "system", "content": evaluatesaq_system_prompt}, {"role": "user", "content": evaluatesaq_prompt_template}]
         feedback_response = self.llm.chat_generate(messages)
@@ -320,12 +320,8 @@ Think step-by-step before providing feedback: <response>"""
       # Generate score
       scoresaq_system_prompt = f"""You are an expert in the subject, evaluate the answer to a given question. \
 Score the input answer for a short answer question. Read the question, correct answer, input answer and feedback carefully. \
-Think step-by-step before providing a score based on the quality of the input answer on a scale of 1 to 5 with the following criteria: 
-1 - Poor
-2 - Fair
-3 - Good
-4 - Very Good
-5 - Excellent
+Think step-by-step before providing a score based on the quality of the input answer with respect to the correct answer on a scale of 1 to 5 with the following criteria: \
+1 - Completely Incorrect or Irrelevant, 2 - Largely Incorrect or Severely Incomplete, 3 - Partially Correct or Basic Understanding, 4 - Mostly Correct or Good Understanding, 5 - Completely Correct or Excellent Understanding. \
 Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><score>{{score}}</score></response>."""
       scoresaq_prompt_template = f"""Score the input answer for the following short answer question. Read the question, correct answer, input answer and feedback carefully. \
 
