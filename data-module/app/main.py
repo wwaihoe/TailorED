@@ -380,17 +380,17 @@ def retrieve_saq_topics():
 def retrieve_mcq(question_set_id: str):
   try:
     # Retrieve Topic
-    topic = conn.execute('SELECT topic FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchone()
+    topic = conn.execute('SELECT DISTINCT topic FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchone()
     if topic is None:
       return RetrieveMCQResponse(topic="", mcqs=[], feedbacks=None)
     else:
       topic = topic[0]
     # Retrieve MCQs
-    results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, correct_option, reason FROM mcq WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT id, question, option_a, option_b, option_c, option_d, correct_option, reason FROM mcq WHERE question_set_id = %s ORDER BY id', (question_set_id,)).fetchall()
     mcqs = []
     for id, question, option_a, option_b, option_c, option_d, correct_option, reason in results:
       mcqs.append({"id": id, "question": question, "option_a": option_a, "option_b": option_b, "option_c": option_c, "option_d": option_d, "correct_option": correct_option, "reason": reason})
-    results = conn.execute('SELECT question_id, chosen_option, feedback FROM mcq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT question_id, chosen_option, feedback FROM mcq_feedback WHERE question_set_id = %s ORDER BY question_id', (question_set_id,)).fetchall()
     mcq_feedbacks = []
     for question_id, chosen_option, feedback in results:
       mcq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "chosen_option": chosen_option, "feedback": feedback})
@@ -408,17 +408,17 @@ def retrieve_mcq(question_set_id: str):
 def retrieve_saq(question_set_id: str):
   try:
     # Retrieve Topic
-    topic = conn.execute('SELECT topic FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchone()
+    topic = conn.execute('SELECT DISTINCT topic FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchone()
     if topic is None:
       return RetrieveSAQResponse(topic="", saqs=[], feedbacks=None, total_score=None)
     else:
       topic = topic[0]
     # Retrieve SAQs
-    results = conn.execute('SELECT id, question, correct_answer, reason FROM saq WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT id, question, correct_answer, reason FROM saq WHERE question_set_id = %s ORDER BY id', (question_set_id,)).fetchall()
     saqs = []
     for id, question, correct_answer, reason in results:
       saqs.append({"id": id, "question": question, "correct_answer": correct_answer, "reason": reason})
-    results = conn.execute('SELECT question_id, input_answer, feedback, score FROM saq_feedback WHERE question_set_id = %s', (question_set_id,)).fetchall()
+    results = conn.execute('SELECT question_id, input_answer, feedback, score FROM saq_feedback WHERE question_set_id = %s ORDER BY question_id', (question_set_id,)).fetchall()
     saq_feedbacks = []
     for question_id, input_answer, feedback, score in results:
       saq_feedbacks.append({"question_set_id": question_set_id, "question_id": question_id, "input_answer": input_answer, "feedback": feedback, "score": score})
