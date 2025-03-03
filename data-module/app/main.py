@@ -30,18 +30,21 @@ conn = psycopg.connect(f"host={host} port={port} dbname={dbname} user={user} pas
 class Message(BaseModel):
   timestamp: datetime
   role: str
+  reason: str
   content: str
 
 class SaveMessageRequest(BaseModel):
   chat_id: str
   timestamp: datetime
   role: str
+  reason: Optional[str] = None
   content: str
 
 class Chat(BaseModel):
   chat_id: str
   timestamp: datetime
   role: str
+  reason: str
   content: str
 
 class RetrieveChatsResponse(BaseModel):
@@ -165,10 +168,20 @@ class RetrieveAllScoresResponse(BaseModel):
   saq_scores: List[SAQScore]
 
 class SaveStudyPlanRequest(BaseModel):
+  subject: str
   timestamp: datetime
   study_plan: str
 
+class StudyPlanSubject(BaseModel):
+  id: int
+  subject: str
+  timestamp: datetime
+
+class RetrieveStudyPlanSubjectsResponse(BaseModel):
+  subjects: List[StudyPlanSubject]
+
 class RetrieveStudyPlanResponse(BaseModel):
+  subject: str
   timestamp: Optional[datetime] = None
   study_plan: Optional[str] = None
 
@@ -187,6 +200,7 @@ conn.execute("""CREATE TABLE IF NOT EXISTS message (
              chat_id text,
              timestamp timestamp,
              role text,
+             reason text,
              content text);""")
 
 # Create MCQ table
@@ -251,6 +265,7 @@ conn.execute("""CREATE TABLE IF NOT EXISTS summary (
 # Create study plan table
 conn.execute("""CREATE TABLE IF NOT EXISTS study_plan (
              id serial PRIMARY KEY, 
+             subject text,
              timestamp timestamp, 
              study_plan text);""")
 
@@ -266,7 +281,9 @@ conn.commit()
 def save_message(save_message_request: SaveMessageRequest):
   try:
     # Insert message data
-    conn.execute(f'INSERT INTO message (chat_id, timestamp, role, content) VALUES (%s, %s, %s, %s)', (save_message_request.chat_id, save_message_request.timestamp, save_message_request.role, save_message_request.content))
+    if save_message_request.reason is None:
+      save_message_request.reason = ""
+    conn.execute(f'INSERT INTO message (chat_id, timestamp, role, reason, content) VALUES (%s, %s, %s, %s, %s)', (save_message_request.chat_id, save_message_request.timestamp, save_message_request.role, save_message_request.reason, save_message_request.content))
     conn.commit()
     return
 
@@ -280,8 +297,8 @@ def save_message(save_message_request: SaveMessageRequest):
 def retrieve_chats():
   try:
     # Retrieve first message from each chat
-    results = conn.execute('SELECT chat_id, message.timestamp, role, content FROM message JOIN (SELECT MIN(timestamp) AS timestamp FROM message GROUP BY chat_id) message_ts ON message.timestamp = message_ts.timestamp ORDER BY message.timestamp DESC').fetchall()
-    chats = [{"chat_id": chat_id, "timestamp": timestamp, "role": role, "content": content} for chat_id, timestamp, role, content in results]
+    results = conn.execute('SELECT chat_id, message.timestamp, role, reason, content FROM message JOIN (SELECT MIN(timestamp) AS timestamp FROM message GROUP BY chat_id) message_ts ON message.timestamp = message_ts.timestamp ORDER BY message.timestamp DESC').fetchall()
+    chats = [{"chat_id": chat_id, "timestamp": timestamp, "role": role, "reason": reason, "content": content} for chat_id, timestamp, role, reason, content in results]
     return RetrieveChatsResponse(chats=chats)
   
   except Exception as e:
@@ -294,8 +311,8 @@ def retrieve_chats():
 def retrieve_messages(chat_id: str):
   try:
     # Retrieve messages
-    results = conn.execute('SELECT timestamp, role, content FROM message WHERE chat_id = %s ORDER BY timestamp', (chat_id,)).fetchall()
-    messages = [{"timestamp": timestamp, "role": role, "content": content} for timestamp, role, content in results]
+    results = conn.execute('SELECT timestamp, role, reason, content FROM message WHERE chat_id = %s ORDER BY timestamp', (chat_id,)).fetchall()
+    messages = [{"timestamp": timestamp, "role": role, "reason": reason, "content": content} for timestamp, role, reason, content in results]
     return RetrieveMessagesResponse(messages=messages)
 
   except Exception as e:
@@ -607,7 +624,8 @@ def retrieve_all_scores():
 def save_study_plan(save_study_plan_request: SaveStudyPlanRequest):
   try:
     # Insert study plan data
-    conn.execute(f'INSERT INTO study_plan (timestamp, study_plan) VALUES (%s, %s)', (save_study_plan_request.timestamp, save_study_plan_request.study_plan))
+    conn.execute(f'INSERT INTO study_plan (subject, timestamp, study_plan) VALUES (%s, %s, %s)', (save_study_plan_request.subject, save_study_plan_request.timestamp, save_study_plan_request.study_plan))
+    conn.commit()
     return
 
   except Exception as e:
@@ -616,15 +634,43 @@ def save_study_plan(save_study_plan_request: SaveStudyPlanRequest):
     return
   
 
-@app.get("/retrieve_study_plan/")
-def retrieve_study_plan():
+@app.get("/retrieve_study_plan_subjects/")
+def retrieve_study_plan_subjects():
+  try:
+    # Retrieve distinct subjects
+    results = conn.execute('SELECT id, subject, timestamp FROM study_plan ORDER BY timestamp DESC').fetchall()
+    subjects = [{"id": id, "subject": subject, "timestamp": timestamp} for id, subject, timestamp in results]
+    return RetrieveStudyPlanSubjectsResponse(subjects=subjects)
+
+  except Exception as e:
+    print("Error in retrieving study plan subjects")
+    print(e)
+    return
+  
+
+@app.get("/retrieve_study_plan/{id}/")
+def retrieve_study_plan(id: int):
   try:
     # Retrieve latest study plan
-    results = conn.execute('SELECT timestamp, study_plan FROM study_plan ORDER BY timestamp DESC LIMIT 1').fetchall()
-    return RetrieveStudyPlanResponse(timestamp=results[0][0] if len(results) > 0 else None, study_plan=results[0][1] if len(results) > 0 else None)
+    results = conn.execute('SELECT subject, timestamp, study_plan FROM study_plan WHERE id = %s', (id,)).fetchone()
+    return RetrieveStudyPlanResponse(subject=results[0], timestamp=results[1], study_plan=results[2])
 
   except Exception as e:
     print("Error in retrieving study plan")
+    print(e)
+    return
+  
+
+@app.delete("/delete_study_plan/{id}/")
+def delete_study_plan(id: int):
+  try:
+    # Delete study plan
+    conn.execute('DELETE FROM study_plan WHERE id = %s', (id,))
+    conn.commit()
+    return
+
+  except Exception as e:
+    print("Error in deleting study plan")
     print(e)
     return
 

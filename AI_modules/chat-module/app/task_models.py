@@ -360,7 +360,7 @@ class Summarizer:
 
   def summarize(self, topic=None, examples=False, context=False):
     try:
-      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic, "k": 3})
+      res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic, "k": 4})
       res_json = res.json()
       retrieved_docs = res_json["docs"]
       context = ""
@@ -370,17 +370,19 @@ class Summarizer:
       else:
         context += "None"
       filenames = res_json["filenames"]
-      summarizer_system_prompt = "You are a highly proficient summarizer tasked with analyzing and condensing information into clear, detailed and well-structured summaries. \
-Your goal is to extract the most important points from the provided lecture notes, ensuring that the key concepts, examples, and conclusions are conveyed in a concise, easy-to-understand manner. \
-Always organize your responses logically, focus on clarity, and maintain brevity while preserving the core meaning of the content. \
-Format your summary in a clear and structured manner, ensuring that it captures the essence of the lecture notes effectively."
-      summarizer_prompt_template = f"""Please summarize the following lecture notes, focusing on the key areas outlined below:
-{f"Focusing on this topic: {topic}, briefly describe the overarching subjects covered." if topic != None else "Main Topics: Briefly describe the overarching subjects covered in the lecture."}
-Key Concepts: Highlight the most significant theories, definitions, or ideas discussed, and provide a clear explanation of each.
-{"Important Examples: Summarize any examples or case studies that help illustrate these key concepts." if examples == True else ""}
-Conclusions or Takeaways: Note any final conclusions or major insights provided by the lecturer.
-{"Context: If relevant, indicate how the material relates to other relevant topics or broader concepts in the subject area." if context == True else ""}
-Please ensure the summary is concise but captures all the critical information for an effective review.
+      summarizer_system_prompt = "You are a highly proficient summarizer tasked with analyzing and condensing information into clear, highly detailed and well-structured summaries that cover a specific topic. \
+Your goal is to extract key points from the provided lecture notes related to a specific topic, ensuring that the key points and conclusions are conveyed in a concise, easy-to-understand manner. \
+Always organize your responses logically, focus on clarity, and ensure that the key ideas of the content are included. \
+Format your summary in a clear and structured manner, ensuring that it captures the essence of the topic effectively. \
+Please ensure the summary is highly detailed to capture all the critical information related to the specific topic for an effective review. \
+Strictly do not include any information that is not found in the lecture notes and ensure that all information included is accurate and relevant with regard to the notes provided."
+      summarizer_prompt_template = f"""Please summarize the following lecture notes {f"for this topic only: {topic}, " if topic is not None else ""}and include the following sections:
+Main Topics: A brief introduction to the overarching subjects covered in the lecture that relate to the topic.
+Key Points: Summarize the most significant information, concepts, theories, definitions, frameworks, or ideas discussed, and provide a clear and highly detailed explanation of each, ensuring that all critical points are covered.
+{"Important Examples: Summarize any examples or case studies that help illustrate the key information." if examples == True else ""}
+Conclusions or Takeaways: Note any final conclusions or major insights provided by the lecture notes.
+{"Additional Context: If relevant, highlight how the material relates to other relevant topics or broader concepts in the subject area." if context == True else ""}
+Please ensure that the summary is detailed, accurate, and well-structured, providing a comprehensive overview of the specific topic based on the lecture notes. 
 
 <notes>{context}</notes>
 
@@ -400,11 +402,27 @@ class StudyPlanGenerator:
     self.vectorstore_url = vectorstore_url
     self.llm = llm
 
-  def generate_study_plan(self, topics: List[str], mcq_scores: List[MCQScore], saq_scores: List[SAQScore]):
+  def generate_study_plan(self, subject: str, topics: List[str], mcq_scores: List[MCQScore], saq_scores: List[SAQScore]):
     try:
+      # Condense list of topics
+      topic_list = ", ".join(topics)
+      condensetopics_system_prompt = "You are a subject matter expert tasked with condensing a list of topics into a more concise list of topics that are related to a specific subject. \
+Your goal is to identify the core themes and subjects from the list provided, ensuring that the key topics are accurately represented. \
+Think step-by-step before providing the condensed list, ensuring that the main ideas are captured effectively. \
+Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><list><topic>{{topic1}}</topic><topic>{{topic2}}</topic>...</list></response>."
+      condensetopics_prompt_template = f"""Based on the following list of topics: {topic_list}, condense the topics into a more concise list related to the subject: {subject}. \
+Think step-by-step before providing the condensed list.
+
+<response>"""
+      messages = [{"role": "system", "content": condensetopics_system_prompt}, {"role": "user", "content": condensetopics_prompt_template}]
+      response = self.llm.chat_generate(messages)
+      condensed_topics_match = re.search(r'<list>(.*?)</list>', response, re.DOTALL).group(1)
+      condensed_topics = condensed_topics_match.split("</topic>")
+      condensed_topics = [topic.replace("<topic>", "").strip() for topic in condensed_topics if topic != ""]
+
       # Extract key topics for context for each topic
       extracted_topics = ""
-      for topic in topics:
+      for topic in condensed_topics:
         res = requests.post(f"{self.vectorstore_url}/retrieve/", json={"query":  topic, "k": 3})
         res_json = res.json()
         retrieved_docs = res_json["docs"]
@@ -415,9 +433,8 @@ class StudyPlanGenerator:
         else:
           context += "None"
         extracttopics_system_prompt = "You are a highly proficient topic extractor tasked with analyzing and extracting key topics from the provided lecture notes. \
-Your goal is to identify the most important subjects and concepts discussed in the content, ensuring that the core themes are accurately captured. \
-Always focus on clarity, relevance, and precision when extracting topics, and provide a clear overview of the main ideas presented. \
-Format your response in a clear and organized manner, ensuring that the key topics are easy to identify and understand."
+Your goal is to identify the most important topics discussed in the content, ensuring that the core themes are accurately captured. \
+Format your response in a clear and organized list, ensuring that the key topics are easy to identify and understand."
         extracttopics_prompt_template = f"""Based on the following lecture notes, extract the key topics discussed:
 
 <notes>{context}</notes>
@@ -428,30 +445,34 @@ Key Topics: """
         extracted_topics += response + "\n\n-----------------------------------\n\n"
         
       # Combine extracted topics
-      combinetopics_system_prompt = "You are an expert summarizer tasked with combining key topics from multiple sources. \
-Your goal is to create a comprehensive list of key topics that cover all the main subjects and concepts discussed in the context. \
-Ensure that the key topics are relevant, accurate, and well-organized, providing a clear overview of the main ideas presented. \
-Format your response in a clear and structured manner, ensuring that the key topics are easy to identify and understand."
-      combinetopics_prompt_template = f"""Based on the extracted key topics shown in the context, combine the topics into a comprehensive list:
+      if extracted_topics != "":
+        combinetopics_system_prompt = "You are an expert summarizer tasked with combining key topics from multiple sources. \
+  Your goal is to create a comprehensive list of key topics that cover all the main subjects and areas discussed in the context. \
+  Ensure that the key topics are relevant, accurate, and well-organized, providing a clear overview of the main ideas presented without any repetition. \
+  Format your response in a clear and structured manner, ensuring that the key topics are easy to identify and understand."
+        combinetopics_prompt_template = f"""Based on the extracted key topics shown in the context, combine the topics into a comprehensive list:
 
-<context>{extracted_topics}</context>
+  <context>{extracted_topics}</context>
 
-Key Topics: """
-      messages = [{"role": "system", "content": combinetopics_system_prompt}, {"role": "user", "content": combinetopics_prompt_template}]
-      final_topics = self.llm.chat_generate(messages)
+  Key Topics: """
+        messages = [{"role": "system", "content": combinetopics_system_prompt}, {"role": "user", "content": combinetopics_prompt_template}]
+        final_topics = self.llm.chat_generate(messages)
+      else:
+        final_topics = None
 
-      studyplangenerator_system_prompt = """You are an expert educational consultant tasked with creating a highly personalized and actionable study plan for me, a student. \
-Your goal is to provide a detailed plan that addresses the my specific needs as a student, covering key topics and areas for improvement while recommending topics for further study. \
-Analyze the key topics in my curriculum, the topics I have been working on and my assessment scores on practice questions. \
-Think about the my strengths and weaknesses, and tailor the study plan to help me achieve my learning goals. \
-Provide a structured plan with clear objectives, topics to cover, and activities to guide my learning process. \
+      # Generate study plan
+      studyplangenerator_system_prompt = f"""You are an expert educational consultant tasked with creating a highly personalized and actionable study plan for me, a student. \
+Your goal is to provide a detailed plan for a specifc subject that addresses the my specific needs as a student, covering areas for improvement while recommending topics for further study. \
+First, analyze {"the key topics in my curriculum, " if final_topics is not None else ""}the topics I have been working on and my assessment scores on practice questions. \
+Then, think about the my strengths and weaknesses, and tailor the study plan to help me achieve my learning goals. \
+Provide a structured plan with clear objectives, topics that I should seek improvement on and topics I can work on for further study, and activities to guide my learning process   . \
 Also include specific recommendations for improving performance in the identified areas of weakness, and building on existing strengths. \
 Format your response in a clear and organized manner, ensuring that the study plan is easy to follow and implement. \
-The study plan should include the key topics in the curriculum, the topics I am working on, my strengths and weaknesses based on my assessment scores, and detailed recommendations for further study."""
-      studyplangenerator_prompt_template = f"""Create a study plan for me, a student, based on the following key topics in my curriculum, topics that I have been working on and my assessment scores on practice questions:
+The study plan should include {"the key topics in the curriculum, " if final_topics is not None else ""}the topics I am working on, my strengths and weaknesses based on my assessment scores, and the detailed plan with recommendations for further study."""
+      studyplangenerator_prompt_template = f"""Create a study plan for a this subject: {subject}, for me, a student, based on the following {"key topics in my curriculum, " if final_topics is not None else ""}topics that I have been working on and my assessment scores on practice questions:
 
-<key_topics_in_curriculum>{final_topics}</key_topics_in_curriculum>      
-
+{f'''<key_topics_in_curriculum>{final_topics}</key_topics_in_curriculum> 
+''' if final_topics is not None else ""}
 <topics_I_am_working_on>{", ".join(topics)}</topics_I_am_working_on>
 
 <mcq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['num_correct']}/{score['num_questions']}}}" for score in mcq_scores])}</mcq_scores>

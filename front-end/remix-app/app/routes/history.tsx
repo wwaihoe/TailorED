@@ -78,7 +78,7 @@ export default function History() {
             Jump back into a previous chat
           </h1>
         </header>
-        <div className="flex flex-col max-w-7xl w-full mb-20 gap-4 overflow-y-auto">
+        <div className="flex flex-col max-w-3xl w-full mb-20 gap-4 overflow-y-auto">
           {chats.map((chat) => <Chat key={chat.chatId} chatId={chat.chatId} timestamp={chat.timestamp} role={chat.role} content={chat.content} />)}
         </div>
       </main>
@@ -96,7 +96,7 @@ export function Chat({ chatId, timestamp, role, content }: ChatObj) {
 
   return (
     <div className="relative">
-      <Link to={`/fileupload/chat/${chatId}`} className="py-3 pl-3 pr-9 flex flex-row gap-4 justify-between text-center bg-zinc-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
+      <Link to={`/fileupload/chat/${chatId}`} className="py-3 pl-3 pr-9 flex flex-row gap-4 justify-between text-center bg-zinc-800 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
         <h2>{displayContent}</h2>
         <div className="flex flex-row gap-1 text-sm text-center items-center">
           <p>{displayTimestamp}</p>

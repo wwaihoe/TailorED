@@ -75,14 +75,14 @@ export default function SummaryCreate() {
                     className="w-2/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
                     placeholder="Type the topic for the summary..."
                   />
-                  <div className="ml-3 flex flex-col gap-1 align-middle justify-center">
+                  <div className="ml-2 flex flex-col gap-1 align-middle justify-center">
                     <div className="flex flex-row gap-1">
                       <input disabled={isSubmitting} type="checkbox" id="examples" name="examples" value="true"/>
                       <label htmlFor="examples" className="text-sm">Include examples</label>
                     </div>
                     <div className="flex flex-row gap-1">
                       <input disabled={isSubmitting} type="checkbox" id="context" name="context" value="true"/>
-                      <label htmlFor="context" className="text-sm">Include context</label>
+                      <label htmlFor="context" className="text-sm">Include additional context</label>
                     </div>
                   </div>
                 </div>

@@ -73,7 +73,7 @@ export async function action({
 }
 
 
-export default function MCQ() {
+export default function MCQs() {
   const topics = useLoaderData<typeof loader>() as Topic[];
   
   return (
@@ -82,7 +82,7 @@ export default function MCQ() {
         <h1 className="text-4xl font-extrabold m-auto text-transparent">MCQ Practice</h1>
       </header>
       <main className="flex flex-col justify-center content-center items-center h-[90vh] w-[90%] gap-6">
-        <div className="rounded-md bg-zinc-700 border-t border-zinc-500 h-[75vh] w-full p-4">
+        <div className="rounded-md bg-zinc-800 h-[75vh] w-full p-4">
           <p className="text-xl font-bold mb-4 flex justify-center">
             Choose a topic to practice MCQs
           </p>

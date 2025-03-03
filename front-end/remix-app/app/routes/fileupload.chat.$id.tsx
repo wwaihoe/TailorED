@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useLoaderData, useFetcher, Link } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import Markdown from 'markdown-to-jsx'
 import type { MetaFunction } from "@remix-run/node";
 import { v4 as uuidv4 } from 'uuid';
+import Accordion from "../components/accordion";
 
 
 export const meta: MetaFunction = () => {
@@ -24,11 +24,19 @@ const dataModuleURLClient = "http://localhost:8003";
 type Message = {
   timestamp: string;
   role: string;
+  reason: string | null;
   content: string;
 };
 
 type ChatLoadData = {
   messages: Message[];
+}
+
+type ChatResponse = {
+  reason: string;
+  answer: string;
+  filenames: string[];
+  timestamp: string;
 }
 
 
@@ -90,29 +98,25 @@ export async function action({
   
   // generate response
   console.log("Generating response...");
-  // include only role and content
-  inputMessagesJSON.forEach((message: any) => {
-    delete message.timestamp;
-  });
   try {
     const response = await fetch(`${chatModuleURLServer}/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ messages: inputMessagesJSON, chat_id: params.id, timestamp: new Date(Date.now()).toISOString() }),
+      body: JSON.stringify({ messages: inputMessagesJSON, chat_id: params.id, timestamp: message.timestamp }),
     });
     if (response.ok) {
       const data = await response.json();
       console.log("Response generated successfully");
-      return json({ role: "assistant", content: data.output.answer, filenames: data.filenames });
+      return data as ChatResponse;
     }
     else {
-      return json({ role: "assistant", content: "Failed to generate response.", filenames: [] });
+      return { reason: "", answer: "Failed to generate response.", filenames: [], timestamp: "" } as ChatResponse;
     }
   } catch (error) {
     console.error(error);
-    return json({ role: "assistant", content: "Failed to generate response.", filenames: [] });
+    return { reason: "", answer: "Failed to generate response.", filenames: [], timestamp: "" } as ChatResponse;
   }
 
 }
@@ -120,7 +124,6 @@ export async function action({
 export default function Chat() {
   const params = useParams();
   const data = useLoaderData<typeof loader>() as ChatLoadData;
-  
 
   const [messages, setMessages] = useState<Message[]>(data.messages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -132,7 +135,7 @@ export default function Chat() {
 
   const handleSubmit = async (event: any) => {
     event.preventDefault()
-    const message = { timestamp: new Date(Date.now()).toISOString(), role: "user", content: input };
+    const message = { timestamp: new Date(Date.now()).toISOString(), role: "user", reason: null, content: input };
     console.log("User message: ", message);
     setMessages((prev) => [...prev, message]);
     if (formRef.current) {
@@ -148,10 +151,10 @@ export default function Chat() {
 
   useEffect(() => {
     if (fetcher.data) {
-      setMessages((prev) => [
-        ...prev,
-        { timestamp: (fetcher.data as Message).timestamp, role: (fetcher.data as Message).role, content: (fetcher.data as Message).content },
-      ]);
+      const chatResponse = fetcher.data as ChatResponse;
+      const message = { timestamp: chatResponse.timestamp, role: "assistant", reason: chatResponse.reason, content: chatResponse.answer }; 
+      console.log("Assistant message: ", message);
+      setMessages((prev) => [...prev, message]);
     }
   }, [fetcher.data]);
 
@@ -170,7 +173,7 @@ export default function Chat() {
 
 
   return (
-    <div className="flex flex-col w-3/4 mx-5 overflow-y-auto p-6 bg-zinc-900">
+    <div className="flex flex-col h-full w-3/4 mx-5 overflow-y-auto p-6 bg-zinc-900">
       <div className="h-full w-5/6 self-center">
         {messages.length === 0 && (
           <p className="text-center text-gray-400">
@@ -187,24 +190,26 @@ export default function Chat() {
             <div
               className={`max-w-screen-md p-4 rounded-md ${
                 msg.role === "user"
-                  ? "bg-zinc-700"
-                  : "bg-gray-700"
+                  ? "bg-zinc-800"
+                  : "bg-transparent border-2 border-zinc-800"
               }`}
             >
               <div className="flex flex-col gap-2">
+                {msg.role === "assistant" && msg.reason &&
+                  <Accordion text={msg.reason} />
+                }
                 <div className="prose prose-zinc dark:prose-invert prose-base text-white">
                   <Markdown options={{ wrapper: 'article' }}>
                   {msg.content}
                   </Markdown>
                 </div>
                 {msg.role === "assistant" && msg.content !== "Failed to generate response." && 
-                  <button onClick={() => navigator.clipboard.writeText(msg.content)} className="w-fit p-1 bg-gray-700 border-t border-zinc-700 hover:bg-gray-500 hover:text-white rounded-md focus:outline-none focus:ring focus:ring-white select-none">
+                  <button onClick={() => navigator.clipboard.writeText(msg.content)} className="w-fit p-1 bg-transparent border-2 border-gray-500 hover:bg-gray-500 hover:text-white rounded-md focus:outline-none focus:ring focus:ring-white select-none">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
                     </svg>
                   </button>}
               </div>
-              
             </div>
           </div>
         ))}

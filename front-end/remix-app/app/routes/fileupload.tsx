@@ -101,7 +101,7 @@ export default function fileUpload() {
       </header>
       <main className="flex flex-row w-full h-[90vh] bg-zinc-900">
         <Outlet/>
-        <div className="w-[22.5%] flex flex-col bg-zinc-700 m-3 border-t border-zinc-500 rounded-lg p-3 items-start h-fit mt-6">
+        <div className="w-[22.5%] flex flex-col bg-zinc-800 m-3 rounded-lg p-3 items-start h-fit mt-6">
           
           <label htmlFor="document">Upload documents here:</label>
           {isUploading ? (

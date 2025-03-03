@@ -156,6 +156,22 @@ class LlamaCPPPython():
     print(f"output: {output}")
     response = output["choices"][0]["message"]["content"]
     return response
+  
+
+  def chat_stream(self, messages: list, **kwargs):
+    llm_args = self.args
+    llm_args.update(kwargs)
+    print("Messages: ", messages)
+    print("Args: ", llm_args)
+    stream = self.llm.create_chat_completion(
+      messages,
+      stream=True,
+      **llm_args
+    )
+    for output in stream:
+      print(f"output: {output}")
+      response = output["choices"][0]["message"]["content"]
+      yield response
 
 
 class Ollama():

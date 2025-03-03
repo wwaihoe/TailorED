@@ -51,7 +51,7 @@ export default function Index() {
 
 export function Task({ name, route }: TaskObj) {
   return (
-    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-700 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
+    <Link to={route? route: "/"} className="p-3 text-center bg-zinc-800 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
       <h1>{name}</h1>
     </Link>
   );
@@ -63,5 +63,5 @@ const tasks = [
   {name: "MCQ Practice", route: "/mcq"},
   {name: "SAQ Practice", route: "/saq"},
   {name: "Summarize Notes", route: "/summarize"},
-  {name: "Study Plan", route: "/studyplan"},
+  {name: "Study Plan", route: "/studyplans/create/fileupload"},
 ]

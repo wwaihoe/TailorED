@@ -1,6 +1,7 @@
 import numpy as np
 import uuid
 import pymupdf
+import pymupdf4llm
 import bm25s
 import psycopg
 from pgvector.psycopg import register_vector
@@ -111,10 +112,7 @@ class HybridSearch:
       # Read the document 
       file_content = await file.read()
       doc = pymupdf.open(stream=file_content)
-      for page in doc: # iterate the document pages
-          text = page.get_text() # get plain text encoded as UTF-8
-          doc_text += text
-          doc_text += "\n\n"
+      doc_text = pymupdf4llm.to_markdown(doc)
     except Exception as e:
       print("Error in reading the document")
       print(e)

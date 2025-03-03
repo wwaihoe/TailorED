@@ -39,12 +39,9 @@ class ChatRequest(BaseModel):
   timestamp: datetime
   messages: List[Message]
 
-class MessageWithReason(BaseModel):
+class ChatResponse(BaseModel):
   reason: str
   answer: str
-
-class ChatResponse(BaseModel):
-  output: MessageWithReason
   filenames: List[str]
 
 class Difficulty(Enum):
@@ -119,6 +116,7 @@ class SummarizeRequest(BaseModel):
   context: Optional[bool] = False
 
 class GenerateStudyPlanRequest(BaseModel):
+  subject: str
   timestamp: datetime
 
 class GenerateStudyPlanResponse(BaseModel):
@@ -137,8 +135,9 @@ def health_check():
 def get_response(chat_request: ChatRequest):
   chat_response = qa_chain_model.generate(chat_request.messages)
   # save response to database
+  timestamp = datetime.now(timezone.utc).isoformat() 
   try:
-    body = {"chat_id": chat_request.chat_id, "timestamp": datetime.now(timezone.utc).isoformat(), "role": "assistant", "content": chat_response["content"]["answer"]}
+    body = {"chat_id": chat_request.chat_id, "timestamp": timestamp, "role": "assistant", "reason": chat_response["content"]["reason"], "content": chat_response["content"]["answer"]}
     response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_message/", json=body)
     if not response.ok:
       print("Error in saving chat response")
@@ -147,7 +146,7 @@ def get_response(chat_request: ChatRequest):
     print("Error in saving chat response")
     print(e)
   
-  return ChatResponse(output=chat_response["content"], filenames=chat_response["filenames"])
+  return ChatResponse(reason=chat_response["content"]["reason"], answer=chat_response["content"]["answer"], filenames=chat_response["filenames"], timestamp=timestamp)
 
 
 @app.post("/generate_mcq/")
@@ -393,12 +392,12 @@ def generate_study_plan(generate_study_plan_request: GenerateStudyPlanRequest):
     mcq_scores = response.json()["mcq_scores"]
     saq_scores = response.json()["saq_scores"]
     # Generate study plan
-    study_plan = study_plan_generator.generate_study_plan(topics, mcq_scores, saq_scores)
+    study_plan = study_plan_generator.generate_study_plan(generate_study_plan_request.subject, topics, mcq_scores, saq_scores)
     if study_plan is None:
       raise HTTPException(status_code=500, detail="Failed to generate study plan")
     try:
       timestamp_str = generate_study_plan_request.timestamp.isoformat()
-      body = {"timestamp": timestamp_str, "study_plan": study_plan}
+      body = {"subject": generate_study_plan_request.subject, "timestamp": timestamp_str, "study_plan": study_plan}
       response = requests.post(f"http://{datamodule_name}:{datamodule_port}/save_study_plan/", json=body)
       if not response.ok:
         print("Error in saving study plan")
@@ -413,7 +412,7 @@ def generate_study_plan(generate_study_plan_request: GenerateStudyPlanRequest):
     print("Error in generating study plan")
     print(e)
     raise HTTPException(status_code=500, detail="Error in generating study plan")
-  return GenerateStudyPlanResponse(study_plan=study_plan)
+  return
 
 
 @app.post("/generate_image_prompt/")

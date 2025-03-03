@@ -1,10 +1,5 @@
 import { useState, useRef } from "react";
-import {
-  Form,
-  useNavigation,
-  useSubmit,
-  Outlet 
-} from "@remix-run/react";
+import { Form, useNavigation, useSubmit, Outlet } from "@remix-run/react";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 
