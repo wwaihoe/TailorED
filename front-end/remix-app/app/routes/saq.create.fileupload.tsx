@@ -147,7 +147,7 @@ export default function fileUpload() {
                 <div className="rounded-full h-5 w-5 bg-white animate-ping"></div>
               </div>
               : 
-              <button type="submit" className="flex text-center h-fit select-none pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">
+              <button type="submit" className="flex text-center h-fit select-none pb-0.5 px-2 rounded-full text-white hover:text-red-400 focus:outline-none focus:ring-1 focus:ring-red-300">
                 x
               </button>
               }

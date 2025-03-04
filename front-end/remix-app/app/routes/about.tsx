@@ -18,7 +18,7 @@ export default function About() {
             About TailorED
           </h1>
         </header>
-        <div className="flex flex-col max-w-3xl items-center justify-center gap-8 rounded-3xl border border-gray-200 p-10 dark:border-gray-700 bg-white dark:bg-zinc-900 shadow-lg">
+        <div className="flex flex-col max-w-3xl items-center justify-center gap-8 rounded-3xl border border-zinc-700 p-10 bg-zinc-900 shadow-lg">
           <div className="text-center">
             <div className="bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
               <h2 className="text-4xl font-extrabold m-auto text-transparent tracking-tight mb-2">

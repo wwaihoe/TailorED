@@ -96,7 +96,7 @@ export function Chat({ chatId, timestamp, role, content }: ChatObj) {
 
   return (
     <div className="relative">
-      <Link to={`/fileupload/chat/${chatId}`} className="py-3 pl-3 pr-9 flex flex-row gap-4 justify-between text-center bg-zinc-800 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
+      <Link to={`/fileupload/chat/${chatId}`} className="py-3 pl-3 pr-9 flex flex-row gap-4 justify-between text-center bg-zinc-800 border border-zinc-700 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
         <h2>{displayContent}</h2>
         <div className="flex flex-row gap-1 text-sm text-center items-center">
           <p>{displayTimestamp}</p>
@@ -104,7 +104,7 @@ export function Chat({ chatId, timestamp, role, content }: ChatObj) {
       </Link>
       <fetcher.Form method="post" className="flex absolute top-0 right-0 p-3 mt-1 text-sm text-center items-center">
         <input type="hidden" name="chatId" value={chatId} />
-        <button type="submit" className="text-center items-center select-none pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">x</button> 
+        <button type="submit" className="text-center items-center select-none pb-0.5 px-2 rounded-full text-white hover:text-red-400 focus:outline-none focus:ring-1 focus:ring-red-300">x</button> 
       </fetcher.Form>
     </div>
   );

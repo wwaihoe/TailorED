@@ -102,10 +102,10 @@ function TopicObj({ id, topic, route, image_prompt }: TopicObj) {
   const isSubmitting = fetcher.state !== "idle";
 
   return (
-    <div className="w-full h-60 relative text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
+    <div className="w-full h-60 relative text-center bg-zinc-800 border border-zinc-700 rounded-xl text-lg text-white flex flex-col items-center">
       {isSubmitting ? 
       <div>
-        <button className="w-full h-full relative p-3 text-center bg-zinc-800 border-4 border-zinc-600 rounded-xl text-lg text-white flex flex-col items-center">
+        <button className="w-full h-full relative p-3 text-center bg-zinc-800 rounded-xl text-lg text-white flex flex-col items-center">
           <img 
           src={`https://image.pollinations.ai/prompt/${image_prompt ? image_prompt : `An illustration of the topic: ${topic}`}?width=1024&height=512&model=flux&seed=23&nologo=true&private=true`} 
           alt={topic}
@@ -116,7 +116,7 @@ function TopicObj({ id, topic, route, image_prompt }: TopicObj) {
           </div>
           
         </button>
-        <button disabled type="submit" className="text-sm absolute top-0 right-0 flex text-center select-none bg-black bg-opacity-80 pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">
+        <button disabled type="submit" className="text-sm absolute top-0 right-0 flex text-center select-none bg-black bg-opacity-80 pb-0.5 px-2 rounded-full text-white">
           x
         </button>
       </div>
@@ -135,7 +135,7 @@ function TopicObj({ id, topic, route, image_prompt }: TopicObj) {
         <fetcher.Form method="post" className="absolute top-0 right-0">
           <input type="hidden" name="id" value={id}/>
           <input type="hidden" name="topic" value={topic}/>
-          <button type="submit" className="text-sm flex text-center select-none bg-black bg-opacity-80 pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">
+          <button type="submit" className="text-sm flex text-center select-none bg-black bg-opacity-80 pb-0.5 px-2 rounded-full text-white hover:text-red-400 focus:outline-none focus:ring-1 focus:ring-red-300">
             x
           </button>
         </fetcher.Form>

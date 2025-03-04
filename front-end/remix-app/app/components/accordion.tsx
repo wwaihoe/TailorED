@@ -16,7 +16,7 @@ export default function Accordion({ text }: { text: string }) {
      />
      <label
        htmlFor="expandCollapse"
-       className="w-fit p-2 flex hover:bg-gray-500 text-white rounded-lg border-2 border-gray-500 text-sm"
+       className="w-fit p-2 flex text-white rounded-lg border border-zinc-700 hover:bg-zinc-600 text-sm"
        onClick={() => setOpen(!open)}
      >
        {open ? (

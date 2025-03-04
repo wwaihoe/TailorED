@@ -58,7 +58,7 @@ export default function SummaryCreate() {
         <h1 className="text-4xl font-extrabold m-auto text-transparent">Create Summary</h1>
       </header>
       <main className="flex h-[90%] w-[90%] justify-center">
-        <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-2xl w-full h-fit">
+        <div className="m-5 flex flex-col bg-zinc-800 rounded-lg p-5 max-w-2xl w-full h-fit">
           <Outlet />
           <Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="flex flex-col justify-center content-center items-center h-fit p-3">
             <div className="flex flex-col gap-5 h-full w-full"> 
@@ -72,7 +72,7 @@ export default function SummaryCreate() {
                     value={input}
                     ref={inputRef}
                     onChange={(e) => setInput(e.target.value)}
-                    className="w-2/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
+                    className="w-2/3 flex bg-zinc-700 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
                     placeholder="Type the topic for the summary..."
                   />
                   <div className="ml-2 flex flex-col gap-1 align-middle justify-center">

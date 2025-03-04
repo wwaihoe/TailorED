@@ -57,7 +57,7 @@ export default function SAQCreate() {
         <h1 className="text-4xl font-extrabold m-auto text-transparent">Create SAQ</h1>
       </header>
       <main className="flex h-[90%] w-[90%] justify-center">
-        <div className="m-5 flex flex-col bg-zinc-700 border-t border-zinc-500 rounded-lg p-5 max-w-2xl w-full h-fit">
+        <div className="m-5 flex flex-col bg-zinc-800 rounded-lg p-5 max-w-2xl w-full h-fit">
           <Outlet />
           <Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="flex flex-col justify-center content-center items-center h-fit p-3">
             <div className="flex flex-col gap-5 h-full w-full"> 
@@ -71,14 +71,14 @@ export default function SAQCreate() {
                     value={input}
                     ref={inputRef}
                     onChange={(e) => setInput(e.target.value)}
-                    className="w-2/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
+                    className="w-2/3 flex bg-zinc-700 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
                     placeholder="Type the topic for SAQs..."
                     required
                   />
                   <select
                     disabled={isSubmitting}
                     name="difficulty"
-                    className="w-1/3 flex bg-zinc-600 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
+                    className="w-1/3 flex bg-zinc-700 text-gray-100 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400"
                   >
                     <option value="1">Easy</option>
                     <option value="2">Medium</option>

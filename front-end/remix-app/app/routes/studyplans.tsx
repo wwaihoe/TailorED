@@ -72,14 +72,14 @@ export default function StudyPlans() {
   return (
     <div className="flex flex-col w-full h-screen mx-auto bg-zinc-900 text-white items-center">
       <header className="flex w-full h-[10%] justify-center content-center bg-gradient-to-r from-blue-300 to-red-300 bg-clip-text">
-        <h1 className="text-4xl font-extrabold m-auto text-transparent">Study Plans</h1>
+        <h1 className="text-4xl font-extrabold m-auto text-transparent">Study Plan</h1>
       </header>
       <main className="flex flex-row h-[90%] justify-center w-full">
         {studyPlanSubjects.length > 0 &&
         <div className="flex w-2/3 h-full gap-4">
           <div className="flex flex-col max-w-3xl w-full h-full gap-4 items-center m-auto">
             <header className="flex w-full">
-              <h1 className="text-lg font-extrabold text-white mx-3">Previously generated plans</h1>
+              <h1 className="text-lg font-extrabold text-white mx-3">Generated plans</h1>
             </header>
             <div className="flex flex-col w-full gap-4 overflow-y-auto mb-20">
               {studyPlanSubjects.map((subject) => <Subject key={subject.studyPlanId} studyPlanId={subject.studyPlanId} timestamp={subject.timestamp} subject={subject.subject} />)}
@@ -102,7 +102,7 @@ export function Subject({ studyPlanId, timestamp, subject }: StudyPlanSubjectObj
 
   return (
     <div className="relative">
-      <Link to={`/studyplan/${studyPlanId}`} className="py-3 pl-3 pr-9 flex flex-row gap-4 justify-between text-center bg-zinc-800 border-2 border-zinc-600 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
+      <Link to={`/studyplan/${studyPlanId}`} className="py-3 pl-3 pr-9 flex flex-row gap-4 justify-between text-center bg-zinc-800 border border-zinc-700 rounded-xl text-lg text-white hover:bg-zinc-900 hover:text-blue-400">
         <h2>{displayContent}</h2>
         <div className="flex flex-row gap-1 text-sm text-center items-center">
           <p>{displayTimestamp}</p>
@@ -110,7 +110,7 @@ export function Subject({ studyPlanId, timestamp, subject }: StudyPlanSubjectObj
       </Link>
       <fetcher.Form method="post" className="flex absolute top-0 right-0 p-3 mt-1 text-sm text-center items-center">
         <input type="hidden" name="studyPlanId" value={studyPlanId} />
-        <button type="submit" className="text-center items-center select-none pb-0.5 px-2 rounded-full text-white hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-300">x</button> 
+        <button type="submit" className="text-center items-center select-none pb-0.5 px-2 rounded-full text-white hover:text-red-400 focus:outline-none focus:ring-1 focus:ring-red-300">x</button> 
       </fetcher.Form>
     </div>
   );
