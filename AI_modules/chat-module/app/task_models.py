@@ -405,20 +405,27 @@ class StudyPlanGenerator:
   def generate_study_plan(self, subject: str, topics: List[str], mcq_scores: List[MCQScore], saq_scores: List[SAQScore]):
     try:
       # Condense list of topics
+      num_retries = 3
       topic_list = ", ".join(topics)
-      condensetopics_system_prompt = "You are a subject matter expert tasked with condensing a list of topics into a more concise list of topics that are related to a specific subject. \
-Your goal is to identify the core themes and subjects from the list provided, ensuring that the key topics are accurately represented. \
-Think step-by-step before providing the condensed list, ensuring that the main ideas are captured effectively. \
+      condensetopics_system_prompt = "You are a subject matter expert tasked with condensing a list of topics into a more concise list of topics that belong to a specific subject only. \
+Your goal is to identify the core topics from the list provided that are part of the specified subject, ensuring that the key topics are accurately represented and directly related to the subject. \
+Think step-by-step before providing the condensed list, ensuring that only the topics that belong to the subject are captured effectively. \
 Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><list><topic>{{topic1}}</topic><topic>{{topic2}}</topic>...</list></response>."
-      condensetopics_prompt_template = f"""Based on the following list of topics: {topic_list}, condense the topics into a more concise list related to the subject: {subject}. \
-Think step-by-step before providing the condensed list.
-
-<response>"""
-      messages = [{"role": "system", "content": condensetopics_system_prompt}, {"role": "user", "content": condensetopics_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      condensed_topics_match = re.search(r'<list>(.*?)</list>', response, re.DOTALL).group(1)
-      condensed_topics = condensed_topics_match.split("</topic>")
-      condensed_topics = [topic.replace("<topic>", "").strip() for topic in condensed_topics if topic != ""]
+      condensetopics_prompt_template = f"""Based on the following list of topics: {topic_list}, condense the topics into a more concise list of key topics that belong to the subject: {subject} only. \
+Do not include any topics that are not part of the subject or directly related to the subject. \
+Think step-by-step before providing the condensed list: <response>"""
+      while num_retries > 0:
+        messages = [{"role": "system", "content": condensetopics_system_prompt}, {"role": "user", "content": condensetopics_prompt_template}]
+        response = self.llm.chat_generate(messages)
+        condensed_topics_match = re.search(r'<list>(.*?)</list>', response, re.DOTALL).group(1)
+        if condensed_topics_match is not None:
+          break
+        num_retries -= 1
+      if condensed_topics_match is not None:
+        condensed_topics = condensed_topics_match.split("</topic>")
+        condensed_topics = [topic.replace("<topic>", "").strip() for topic in condensed_topics if topic != ""]
+      else:
+        return None
 
       # Extract key topics for context for each topic
       extracted_topics = ""
@@ -433,7 +440,7 @@ Think step-by-step before providing the condensed list.
         else:
           context += "None"
         extracttopics_system_prompt = "You are a highly proficient topic extractor tasked with analyzing and extracting key topics from the provided lecture notes. \
-Your goal is to identify the most important topics discussed in the content, ensuring that the core themes are accurately captured. \
+Your goal is to identify the most important topics discussed in the content, ensuring that the core topics are accurately captured. \
 Format your response in a clear and organized list, ensuring that the key topics are easy to identify and understand."
         extracttopics_prompt_template = f"""Based on the following lecture notes, extract the key topics discussed:
 
@@ -460,29 +467,46 @@ Key Topics: """
       else:
         final_topics = None
 
+      # Filter scores based on condensed topics
+      condensed_topics_set = set(condensed_topics)
+      filtered_mcq_scores = [score for score in mcq_scores if score['topic'] in condensed_topics_set]
+      filtered_saq_scores = [score for score in saq_scores if score['topic'] in condensed_topics_set]
+
       # Generate study plan
+      num_retries = 3
       studyplangenerator_system_prompt = f"""You are an expert educational consultant tasked with creating a highly personalized and actionable study plan for me, a student. \
 Your goal is to provide a detailed plan for a specifc subject that addresses the my specific needs as a student, covering areas for improvement while recommending topics for further study. \
-First, analyze {"the key topics in my curriculum, " if final_topics is not None else ""}the topics I have been working on and my assessment scores on practice questions. \
+First, analyze {"the key topics in my curriculum that are directly related to the specified subject, " if final_topics is not None else ""}the topics I have been working on that are directly related to the specified subject and my assessment scores on practice questions for topics that are directly related to the specified subject. \
 Then, think about the my strengths and weaknesses, and tailor the study plan to help me achieve my learning goals. \
-Provide a structured plan with clear objectives, topics that I should seek improvement on and topics I can work on for further study, and activities to guide my learning process   . \
+Provide a structured plan with clear objectives, topics that I should seek improvement on and topics I can work on for further study, and activities to guide my learning process. \
 Also include specific recommendations for improving performance in the identified areas of weakness, and building on existing strengths. \
+The study plan must include the following sections: {"the key topics in the curriculum that are directly related to the specified subject, " if final_topics is not None else ""}the topics I am working on that are directly related to the specified subject, my strengths and weaknesses for the subject based on my assessment scores on practice questions for topics that are directly related to the specified subject, and the detailed plan with recommendations for further study for the subject. \
+Do not include any information of topics that are not part of the subject or directly related to the subject, including key topics, strengths, weaknesses, and recommendations.
 Format your response in a clear and organized manner, ensuring that the study plan is easy to follow and implement. \
-The study plan should include {"the key topics in the curriculum, " if final_topics is not None else ""}the topics I am working on, my strengths and weaknesses based on my assessment scores, and the detailed plan with recommendations for further study."""
-      studyplangenerator_prompt_template = f"""Create a study plan for a this subject: {subject}, for me, a student, based on the following {"key topics in my curriculum, " if final_topics is not None else ""}topics that I have been working on and my assessment scores on practice questions:
+Think step-by-step before providing the study plan. \
+Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><plan>{{study plan}}</plan></response>."""
+      studyplangenerator_prompt_template = f"""Create a study plan for a this subject: {subject}, for me, a student, based on the following {"key topics in my curriculum that are directly related to the specified subject, " if final_topics is not None else ""}topics that I have been working on that are directly related to the specified subject and my assessment scores on practice questions for topics that are directly related to the specified subject: 
 
 {f'''<key_topics_in_curriculum>{final_topics}</key_topics_in_curriculum> 
 ''' if final_topics is not None else ""}
 <topics_I_am_working_on>{", ".join(topics)}</topics_I_am_working_on>
 
-<mcq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['num_correct']}/{score['num_questions']}}}" for score in mcq_scores])}</mcq_scores>
+<mcq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['num_correct']}/{score['num_questions']}}}" for score in filtered_mcq_scores])}</mcq_scores>
 
-<saq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['total_score']}/{score['max_score']}}}" for score in saq_scores])}</saq_scores>
+<saq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['total_score']}/{score['max_score']}}}" for score in filtered_saq_scores])}</saq_scores>
 
-Study Plan: """
-      messages = [{"role": "system", "content": studyplangenerator_system_prompt}, {"role": "user", "content": studyplangenerator_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      return response
+Think step-by-step before providing the study plan: <response>"""
+      while num_retries > 0:
+        messages = [{"role": "system", "content": studyplangenerator_system_prompt}, {"role": "user", "content": studyplangenerator_prompt_template}]
+        response = self.llm.chat_generate(messages)
+        plan = re.search(r'<plan>(.*?)</plan>', response, re.DOTALL).group(1)
+        if plan is not None:
+          break
+        num_retries -= 1
+      if plan is not None:
+        return plan
+      else:
+        return None
     
     except Exception as e:
       print("Error in generating study plan")
