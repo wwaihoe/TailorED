@@ -5,7 +5,6 @@ import os
 #Use GPU if available
 if not torch.cuda.is_available():
   os.environ["CUDA_VISIBLE_DEVICES"] = ""
-#os.environ["CUDA_VISIBLE_DEVICES"]=""
 
 
 class EmbeddingModel():
@@ -27,3 +26,7 @@ class RerankerModel():
   def compute_score(self, query_doc_pairs):
     scores = self.reranker.compute_score(query_doc_pairs)
     return scores
+  
+
+embedding_model = EmbeddingModel()
+reranker = RerankerModel()

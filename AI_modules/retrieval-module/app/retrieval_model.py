@@ -5,15 +5,19 @@ import pymupdf4llm
 import bm25s
 import psycopg
 from pgvector.psycopg import register_vector
+import torch
+import gc
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from embedding_models import EmbeddingModel, RerankerModel
+from embedding_models import embedding_model, reranker
 from image_models import ImageCaptionModel
 from speech_models import SpeechRecognitionModel
 
 
 class HybridSearch:
-  def __init__(self, embedding_dim, host="db", port="5432", dbname="database", user="postgres", password="admin", corpus_dict=dict()):
+  def __init__(self, embedding_model, embedding_dim, reranker, host="db", port="5432", dbname="database", user="postgres", password="admin", corpus_dict=dict()):
+    self.embedding_model = embedding_model
     self.embedding_dim = embedding_dim
+    self.reranker = reranker
     self.host = host
     self.port = port
     self.dbname = dbname 
@@ -91,9 +95,7 @@ class HybridSearch:
     try:
       # Add documents to the vector database
       # Embed the corpus
-      embedding_model = EmbeddingModel()
-      embeddings = embedding_model.encode(corpus)
-      del embedding_model
+      embeddings = self.embedding_model.encode(corpus)
       for text, embedding in zip(corpus, embeddings):
         length = len(text)
         self.conn.execute('INSERT INTO vectordb (file_id, embedding, filename, text, length) VALUES (%s, %s, %s, %s, %s)', (file_id, np.array(embedding), filename, text, length))
@@ -130,18 +132,24 @@ class HybridSearch:
 
 
   def add_image(self, file, filename: str, filesize: float):
+    # Initialize the image caption model and delete it after use
     image_caption_model = ImageCaptionModel()
     caption = image_caption_model.generate(file)
     del image_caption_model
+    gc.collect()
+    torch.cuda.empty_cache()
     corpus = self.split_document(caption)
     self.add_documents(filename, corpus)
     return
         
     
   def add_speech(self, filepath: str, filename: str, filesize: float):
+    # Initialize the speech recognition model and delete it after use
     speech_recognition_model = SpeechRecognitionModel()
     speech = speech_recognition_model.generate(filepath)
     del speech_recognition_model
+    gc.collect()
+    torch.cuda.empty_cache()
     corpus = self.split_document(speech)
     self.add_documents(filename, corpus)
     return
@@ -196,9 +204,7 @@ class HybridSearch:
 
   def vector_search(self, query, k=3):
     # Query the vector database
-    embedding_model = EmbeddingModel()
-    embedding = embedding_model.encode(query)
-    del embedding_model
+    embedding = self.embedding_model.encode(query)
     vector_results = self.conn.execute(f'SELECT embedding, text, filename FROM vectordb ORDER BY embedding <-> %s LIMIT {k}', (np.array(embedding),)).fetchall()
     docs = [text for (embedding, text, filename) in vector_results]
     filenames = set([filename for (embedding, text, filename) in vector_results])
@@ -214,9 +220,7 @@ class HybridSearch:
         query_doc_pairs.append([query, doc])
         seen_docs.append(doc)
     # Compute the scores
-    reranker = RerankerModel()
-    scores = reranker.compute_score(query_doc_pairs)
-    del reranker
+    scores = self.reranker.compute_score(query_doc_pairs)
     # Sort the documents by score
     reranked_docs = [doc for score, doc in sorted(zip(scores, seen_docs), reverse=True)]
     # Return top-k documents
@@ -250,4 +254,4 @@ class HybridSearch:
     return filesizes
 
 
-hybrid_search = HybridSearch(embedding_dim=EmbeddingModel.embedding_dims)
+hybrid_search = HybridSearch(embedding_model=embedding_model, embedding_dim=embedding_model.embedding_dims, reranker=reranker)
