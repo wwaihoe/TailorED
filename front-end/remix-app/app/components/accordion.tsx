@@ -2,22 +2,26 @@ import { useState } from "react";
 import Markdown from 'markdown-to-jsx'
 
 
-export default function Accordion({ text }: { text: string }) {
+export default function Accordion({ text, onToggle }: { text: string, onToggle: () => void }) {
  const [open, setOpen] = useState(false);
 
+ const toggleAccordion = () => {
+  onToggle(); // Call the onToggle function from parent BEFORE setOpen
+  setOpen(!open);
+};
 
  return (
    <div className="w-full flex flex-col gap-2">
      <input
-       id="expandCollapse"
-       type="checkbox"
-       checked={open}
-       className="peer sr-only"
+      id="expandCollapse"
+      type="checkbox"
+      checked={open}
+      className="peer sr-only"
      />
      <label
-       htmlFor="expandCollapse"
-       className="w-fit p-2 flex text-white rounded-lg border border-zinc-700 hover:bg-zinc-600 text-sm"
-       onClick={() => setOpen(!open)}
+      htmlFor="expandCollapse"
+      className="w-fit p-2 flex text-white rounded-lg border border-zinc-700 hover:bg-zinc-600 text-sm"
+      onClick={toggleAccordion}
      >
        {open ? (
         <div className="flex flex-row gap-3 items-center">
@@ -42,7 +46,7 @@ export default function Accordion({ text }: { text: string }) {
        )}
      </label>
      <div
-       className="w-full overflow-hidden max-h-0 peer-checked:max-h-[500px] peer-checked:overflow-y-auto transition-[max-height] duration-1000 ease-in-out"
+      className="w-full overflow-hidden max-h-0 peer-checked:max-h-[500px] peer-checked:overflow-y-auto transition-[max-height] duration-1000 ease-in-out"
      >
       <div className="prose prose-zinc dark:prose-invert prose-base text-gray-300 text-sm">
        <Markdown options={{ wrapper: 'article' }}>

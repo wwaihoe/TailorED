@@ -36,7 +36,7 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="overflow-hidden h-screen">
         <div className="flex flex-row">
           <nav className="navbar w-[13.5%] flex flex-col pt-10 gap-7 bg-zinc-800 font-sans text-white items-center">
             <Link to="/" className="flex flex-row gap-2">
