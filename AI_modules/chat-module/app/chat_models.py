@@ -53,18 +53,27 @@ If you do not have sufficient knowledge to answer the query, say "Sorry, I do no
 
 Think step-by-step before providing an answer: <response>"""
       input_messages.append({"role": "user", "content": conversationqa_prompt_template})
-      response = self.llm.chat_generate(input_messages)
-      reason_matches = re.search(r'<think>(.*?)</think>', response, re.DOTALL)
-      if reason_matches is not None:
-        reason = reason_matches.group(1)
-      else:
+      num_retries = 3
+      while num_retries > 0:
+        answer = None
+        reason = None
+        response = self.llm.chat_generate(input_messages)
+        answer_matches = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL)
+        if answer_matches is not None:
+          answer = answer_matches.group(1)
+          reason_matches = re.search(r'<think>(.*?)</think>', response, re.DOTALL)
+          if reason_matches is not None:
+            reason = reason_matches.group(1)
+            break
+        num_retries -= 1
+
+      if reason is None and answer is not None:
         reason = "Error with model"
-      answer_matches = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL)
-      if answer_matches is not None:
-        answer = answer_matches.group(1)
-      else:
-        answer = "Sorry, I do not have sufficient knowledge to provide a response."
+      elif reason is None and answer is None:
+        reason = "Error with model"
+        answer = "Sorry, I am unable to generate a response."
       output = {"reason": reason, "answer": answer}
+
     except Exception as e:
       print(e)
       output = {"reason": "Error with model", "answer": "Error with model"}

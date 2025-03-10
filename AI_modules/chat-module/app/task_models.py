@@ -272,8 +272,9 @@ Feedback: <response>"""
       while num_retries > 0:
         messages = [{"role": "system", "content": evaluatemcq_system_prompt}, {"role": "user", "content": evaluatemcq_prompt_template}]
         feedback_response = self.llm.chat_generate(messages)
-        feedback = re.search(r'<feedback>(.*?)</feedback>', feedback_response, re.DOTALL).group(1)
-        if feedback is not None:
+        feedback_match = re.search(r'<feedback>(.*?)</feedback>', feedback_response, re.DOTALL)
+        if feedback_match is not None:
+          feedback = feedback_match.group(1)
           return feedback
         num_retries -= 1
       return None
@@ -306,11 +307,13 @@ Provide only a single clear and concise response in an XML object of this format
 <input_answer>{input_answer}</input_answer>
 
 Think step-by-step before providing feedback for the input answer: <response>"""
+      feedback = None
       while num_retries > 0:
         messages = [{"role": "system", "content": evaluatesaq_system_prompt}, {"role": "user", "content": evaluatesaq_prompt_template}]
         feedback_response = self.llm.chat_generate(messages)
-        feedback = re.search(r'<feedback>(.*?)</feedback>', feedback_response, re.DOTALL).group(1)
-        if feedback is not None:
+        feedback_match = re.search(r'<feedback>(.*?)</feedback>', feedback_response, re.DOTALL)
+        if feedback_match is not None:
+          feedback = feedback_match.group(1)
           break
         num_retries -= 1
       if feedback is None:
@@ -332,11 +335,13 @@ Provide only a single clear and concise response in an XML object of this format
 <feedback>{feedback}</feedback>
 
 Think step-by-step before providing the score: <response>"""
+      score = None
       while num_retries > 0:
         messages = [{"role": "system", "content": scoresaq_system_prompt}, {"role": "user", "content": scoresaq_prompt_template}]
         score_response = self.llm.chat_generate(messages)
-        score = re.search(r'<score>(.*?)</score>', score_response, re.DOTALL).group(1)
-        if score is not None:
+        score_match = re.search(r'<score>(.*?)</score>', score_response, re.DOTALL)
+        if score_match is not None:
+          score = score_match.group(1)
           break
         num_retries -= 1
       if score is None:
@@ -412,20 +417,23 @@ Your goal is to identify the core topics from the list provided that are part of
 Think step-by-step before providing the condensed list, ensuring that only the topics that belong to the subject are captured effectively. \
 Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><list><topic>{{topic1}}</topic><topic>{{topic2}}</topic>...</list></response>."
       condensetopics_prompt_template = f"""Based on the following list of topics: {topic_list}, condense the topics into a more concise list of key topics that belong to the subject: {subject} only. \
+Focus exclusively on {subject} and directly related topics. \
 Do not include any topics that are not part of the subject or directly related to the subject. \
 Think step-by-step before providing the condensed list: <response>"""
+      condensed_topics_match_list = None
       while num_retries > 0:
         messages = [{"role": "system", "content": condensetopics_system_prompt}, {"role": "user", "content": condensetopics_prompt_template}]
         response = self.llm.chat_generate(messages)
-        condensed_topics_match = re.search(r'<list>(.*?)</list>', response, re.DOTALL).group(1)
+        condensed_topics_match = re.search(r'<list>(.*?)</list>', response, re.DOTALL)
         if condensed_topics_match is not None:
+          condensed_topics_match_list = condensed_topics_match.group(1)
           break
         num_retries -= 1
-      if condensed_topics_match is not None:
-        condensed_topics = condensed_topics_match.split("</topic>")
+      if condensed_topics_match_list is not None:
+        condensed_topics = condensed_topics_match_list.split("</topic>")
         condensed_topics = [topic.replace("<topic>", "").strip() for topic in condensed_topics if topic != ""]
       else:
-        return None
+        raise Exception("Condensed topics not found in the response")
 
       # Extract key topics for context for each topic
       extracted_topics = ""
@@ -479,34 +487,46 @@ Your goal is to provide a detailed plan for a specifc subject that addresses the
 First, analyze {"the key topics in my curriculum that are directly related to the specified subject, " if final_topics is not None else ""}the topics I have been working on that are directly related to the specified subject and my assessment scores on practice questions for topics that are directly related to the specified subject. \
 Then, think about the my strengths and weaknesses, and tailor the study plan to help me achieve my learning goals. \
 Provide a structured plan with clear objectives, topics that I should seek improvement on and topics I can work on for further study, and activities to guide my learning process. \
-Also include specific recommendations for improving performance in the identified areas of weakness, and building on existing strengths. \
-The study plan must include the following sections: {"the key topics in the curriculum that are directly related to the specified subject, " if final_topics is not None else ""}the topics I am working on that are directly related to the specified subject, my strengths and weaknesses for the subject based on my assessment scores on practice questions for topics that are directly related to the specified subject, and the detailed plan with recommendations for further study for the subject. \
-Do not include any information of topics that are not part of the subject or directly related to the subject, including key topics, strengths, weaknesses, and recommendations.
-Format your response in a clear and organized manner, ensuring that the study plan is easy to follow and implement. \
-Think step-by-step before providing the study plan. \
-Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><plan>{{study plan}}</plan></response>."""
+Include specific recommendations for improving performance in the identified areas of weakness, and building on existing strengths. \
+The study plan must include the following sections: 
+1. Key Topics: {"The key topics in the curriculum that are directly related to the specified subject and t" if final_topics is not None else "T"}he topics I am working on that are directly related to the specified subject 
+2. Strengths and Weaknesses: My strengths and weaknesses for the subject based on my assessment scores on practice questions for topics that are directly related to the specified subject 
+3. Detailed plan: 
+- Clear Objectives: What I should aim to achieve in each study week. 
+- Improvement Areas: Specify the topics where I need to improve my understanding and skills in detail. 
+- Further Study Topics: Suggest topics for further study to enhance my knowledge and skills in detail. 
+- Recommended Activities: Include specific and actionable learning activities, such as practice exercises, readings, relevant online resources, or examples. 
+
+Do not include any information on topics that are not part of the subject or directly related to the subject, including key topics, strengths, weaknesses, and recommendations. 
+Format your response in a clear and organized manner, using headings, bullet points, and numbered lists. 
+Think step-by-step before providing the study plan. 
+Provide only a single clear and concise response in an XML object of this format: <response><think>{{step-by-step thought}}</think><study_plan>{{study plan}}</study_plan></response>."""
       studyplangenerator_prompt_template = f"""Create a study plan for a this subject: {subject}, for me, a student, based on the following {"key topics in my curriculum that are directly related to the specified subject, " if final_topics is not None else ""}topics that I have been working on that are directly related to the specified subject and my assessment scores on practice questions for topics that are directly related to the specified subject: 
 
 {f'''<key_topics_in_curriculum>{final_topics}</key_topics_in_curriculum> 
 ''' if final_topics is not None else ""}
-<topics_I_am_working_on>{", ".join(topics)}</topics_I_am_working_on>
+<topics_I_am_working_on>{", ".join(condensed_topics)}</topics_I_am_working_on>
 
 <mcq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['num_correct']}/{score['num_questions']}}}" for score in filtered_mcq_scores])}</mcq_scores>
 
 <saq_scores>{", ".join([f"{{Topic: {score['topic']}, Score: {score['total_score']}/{score['max_score']}}}" for score in filtered_saq_scores])}</saq_scores>
 
+Focus exclusively on {subject} and directly related topics. 
+Please ensure the study plan is easy to follow, actionable, and directly addresses my needs to improve in {subject}. 
 Think step-by-step before providing the study plan: <response>"""
+      study_plan = None
       while num_retries > 0:
         messages = [{"role": "system", "content": studyplangenerator_system_prompt}, {"role": "user", "content": studyplangenerator_prompt_template}]
         response = self.llm.chat_generate(messages)
-        plan = re.search(r'<plan>(.*?)</plan>', response, re.DOTALL).group(1)
-        if plan is not None:
+        study_plan_match = re.search(r'<study_plan>(.*?)</study_plan>', response, re.DOTALL)
+        if study_plan_match is not None:
+          study_plan = study_plan_match.group(1)
           break
         num_retries -= 1
-      if plan is not None:
-        return plan
+      if study_plan is not None:
+        return study_plan
       else:
-        return None
+        raise Exception("Study plan not found in the response")
     
     except Exception as e:
       print("Error in generating study plan")
