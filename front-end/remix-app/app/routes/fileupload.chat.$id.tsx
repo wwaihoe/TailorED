@@ -129,7 +129,7 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === "submitting";
 
@@ -241,22 +241,28 @@ export default function Chat() {
           </Link>
           <fetcher.Form method="post" preventScrollReset onSubmit={(e) => handleSubmit(e)} ref={formRef} className="w-full flex flex-row gap-3 select-none">
             {!isSubmitting ? 
-            <input
-              type="text"
+            <textarea
               name="query"
               value={input}
               ref={inputRef}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 bg-zinc-700 text-gray-200 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400 w-full"
+              className="flex-1 resize-none bg-zinc-700 text-gray-200 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400 w-full overflow-y-auto"
               placeholder="Type your message..."
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  formRef.current?.requestSubmit();
+                }
+              }}
             /> :
-            <input
+            <textarea
               disabled
-              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400 w-full"
+              className="flex-1 resize-none bg-zinc-700 text-gray-500 rounded-md p-3 focus:outline-none focus:ring focus:ring-blue-400 w-full"
               placeholder="Type your message..."
+              rows={1}
             />
             }
             {!isSubmitting ? 
