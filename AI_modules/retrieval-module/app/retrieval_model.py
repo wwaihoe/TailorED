@@ -108,7 +108,7 @@ class HybridSearch:
     return
   
 
-  async def add_text_document(self, file, filename: str, filesize: float):
+  async def add_text_document(self, file, filename: str):
     doc_text = ""
     try:
       # Read the document 
@@ -131,7 +131,7 @@ class HybridSearch:
       raise
 
 
-  def add_image(self, file, filename: str, filesize: float):
+  def add_image(self, file, filename: str):
     # Initialize the image caption model and delete it after use
     image_caption_model = ImageCaptionModel()
     caption = image_caption_model.generate(file)
@@ -143,7 +143,7 @@ class HybridSearch:
     return
         
     
-  def add_speech(self, filepath: str, filename: str, filesize: float):
+  def add_speech(self, filepath: str, filename: str):
     # Initialize the speech recognition model and delete it after use
     speech_recognition_model = SpeechRecognitionModel()
     speech = speech_recognition_model.generate(filepath)

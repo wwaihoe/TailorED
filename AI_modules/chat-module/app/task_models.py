@@ -124,7 +124,7 @@ Multiple Choice Questions (MCQs): """
         if mcq_groups is not None:
           return mcq_groups
         num_retries -= 1
-      return None
+      raise Exception("Parsable MCQs not generated")
     
     except Exception as e:
       print("Error in generating MCQs")
@@ -210,7 +210,7 @@ Short Answer Questions (SAQ): """
         if qa_pairs is not None:
           return qa_pairs
         num_retries -= 1
-      return None
+      raise Exception("Parsable SAQs not generated")
     
     except Exception as e:
       print("Error in generating SAQs")
@@ -277,7 +277,7 @@ Feedback: <response>"""
           feedback = feedback_match.group(1)
           return feedback
         num_retries -= 1
-      return None
+      raise Exception("Feedback not found in the response")
     
     except Exception as e:
       print("Error in evaluating MCQs")
@@ -316,6 +316,7 @@ Think step-by-step before providing feedback for the input answer: <response>"""
           feedback = feedback_match.group(1)
           break
         num_retries -= 1
+
       if feedback is None:
         raise Exception("Feedback not found in the response")
       
@@ -344,6 +345,7 @@ Think step-by-step before providing the score: <response>"""
           score = score_match.group(1)
           break
         num_retries -= 1
+
       if score is None:
         raise Exception("Score not found in the response")
       score = score.replace("\n", "").strip()
@@ -429,6 +431,7 @@ Think step-by-step before providing the condensed list: <response>"""
           condensed_topics_match_list = condensed_topics_match.group(1)
           break
         num_retries -= 1
+
       if condensed_topics_match_list is not None:
         condensed_topics = condensed_topics_match_list.split("</topic>")
         condensed_topics = [topic.replace("<topic>", "").strip() for topic in condensed_topics if topic != ""]
@@ -523,6 +526,7 @@ Think step-by-step before providing the study plan: <response>"""
           study_plan = study_plan_match.group(1)
           break
         num_retries -= 1
+
       if study_plan is not None:
         return study_plan
       else:
@@ -541,27 +545,37 @@ class ImagePromptGenerator:
 
   def generate_image_prompt(self, topic:str):
     try:
+      num_retries = 3
       imageprompt_system_prompt = """You are an expert in the subject, tasked with creating a prompt for an image generation model. \
 Your goal is to provide a detailed description of the image you would like the model to generate to illustrate a topic. \
 Think step-by-step about the key elements, objects, and context that should be included in the image before providing the prompt. \
 Provide only a single clear and concise response in an XML object of this format: <response><think>{step-by-step thought}</think><prompt>{prompt}</prompt></response>."""
       imageprompt_prompt_template = f"""Create the prompt for the image generation model for the topic: {topic}. 
 Think step-by-step about the key elements, objects, and context that should be included in the image before providing the prompt: <response>"""
-      messages = [{"role": "system", "content": imageprompt_system_prompt}, {"role": "user", "content": imageprompt_prompt_template}]
-      response = self.llm.chat_generate(messages)
-      # Parse reason
-      reason_matches = re.search(r'<think>(.*?)</think>', response, re.DOTALL)
-      if reason_matches:
-        reason = reason_matches.group(1)
-      else:
-        reason = "Error with model"
+      reason_matches = None
+      prompt_matches = None
+      while num_retries > 0:
+        # Generate image prompt
+        messages = [{"role": "system", "content": imageprompt_system_prompt}, {"role": "user", "content": imageprompt_prompt_template}]
+        response = self.llm.chat_generate(messages)
+        # Parse reason
+        reason_matches = re.search(r'<think>(.*?)</think>', response, re.DOTALL)
+        if reason_matches is not None:
+          reason = reason_matches.group(1)
+        else:
+          reason = "No reason provided."
 
-      # Parse prompt
-      prompt_matches = re.search(r'<prompt>(.*?)</prompt>', response, re.DOTALL)
-      if prompt_matches:
-        prompt = prompt_matches.group(1)
-        prompt = prompt.replace("\n", " ")
-        prompt = prompt.strip().strip("{}")
+        # Parse prompt
+        prompt_matches = re.search(r'<prompt>(.*?)</prompt>', response, re.DOTALL)
+        if prompt_matches is not None:
+          prompt = prompt_matches.group(1)
+          prompt = prompt.replace("\n", " ")
+          prompt = prompt.strip().strip("{}")
+          break
+        else:
+          num_retries -= 1
+
+      if prompt is not None:
         return prompt
       else:
         raise ValueError("Prompt not found in the response")

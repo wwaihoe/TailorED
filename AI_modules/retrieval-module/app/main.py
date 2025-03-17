@@ -49,17 +49,17 @@ def load_files():
 @app.post("/upload/")
 async def upload_document(file: UploadFile):
   if file.content_type in ["application/pdf", "text/plain"]:
-    await hybrid_search.add_text_document(file, file.filename, file.size)
+    await hybrid_search.add_text_document(file, file.filename)
     print(f'{"PDF" if file.content_type == "application/pdf" else "Text"} Uploaded: {file.filename}')
   elif file.content_type in ["image/jpeg", "image/png"]:
-    hybrid_search.add_image(file.file, file.filename, file.size)
+    hybrid_search.add_image(file.file, file.filename)
     print("Image Uploaded: ", file.filename)
   elif file.content_type == "audio/mpeg":
     os.makedirs("temp", exist_ok=True)
     path = f"temp/{file.filename}"
     with open(path, "wb") as temp_file:
       temp_file.write(file.file.read())
-    hybrid_search.add_speech(path, file.filename, file.size)
+    hybrid_search.add_speech(path, file.filename)
     # Delete the temp_file after use
     temp_file.close()
     os.remove(path)
