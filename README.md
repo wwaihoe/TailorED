@@ -22,6 +22,8 @@ Traditional education systems often employ a one-size-fits-all approach that fai
   <img alt="study plan" src="./screenshots/study plan.png" width="45%">
 </p>
 
+[Demo](https://youtu.be/PDEwVS6zRso)
+
 ### Quick start-up
 1. `git clone https://github.com/wwaihoe/TailorED`
 2. Add downloaded LLM ([Qwen/Qwen2.5-7B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF)) into models folder.
