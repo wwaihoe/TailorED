@@ -1,6 +1,6 @@
 # TailorED
 
-### Generative AI Powered Personalized Learning for University Students
+### Generative AI Powered Personalized Learning
 
 Traditional education systems often employ a one-size-fits-all approach that fails to address the diverse learning needs of individual students. Adopting personalized education methods is crucial for ensuring the effective learning of university students by catering to their individual learning needs and bridging gaps in understanding. To this end, I present TailorED, an AI study companion that leverages generative AI models to provide a more effective and accessible personalized education experience for university students. TailorED consists of a context-aware chatbot, multiple-choice question (MCQ) practice tool, short-answer question (SAQ) practice tool, summarizer, and study plan generator that are designed to allow students to engage in self-directed learning and revision of course content more effectively.
 
